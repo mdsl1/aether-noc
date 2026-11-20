@@ -27,3 +27,21 @@ export interface TokenUsage {
   completionTokens: number;
   totalTokens: number;
 }
+
+export const TOTEM_UPDATED_EVENT = 'totem.updated';
+
+export interface TotemUpdatedEvent {
+  islandSlug: string;
+  islandName: string;
+  islandStatus: TotemStatus;
+  previousStatus: TotemStatus;
+  totem: {
+    totemId: string;
+    name: string;
+    status: TotemStatus;
+    statusReason: string | null;
+    lastCheckAt: string | null;
+    lastStatusChangeAt: string | null;
+    lastMetrics: Record<string, unknown> | null;
+  };
+}
