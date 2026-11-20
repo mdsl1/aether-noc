@@ -216,4 +216,4 @@ O MVP do **A.E.T.H.E.R.** só será considerado concluído quando **todos** os c
 
 - [ ] **Deploy em Produção:** Front-end publicado na Vercel (com `vercel.json` configurado para SPA) e Back-end publicado nativamente no Render, ambos conectados ao MongoDB Atlas.
 - [ ] **Keep-Alive Operacional:** Rota `GET /health` respondendo `200 OK` em `< 200ms` e monitorada pelo cronjob externo a cada 5 minutos para evitar hibernação do Render.
-- [ ] **Ambiente Local Containerizado:** `Dockerfile` e `docker-compose.yml` funcionais no repositório do back-end para desenvolvimento e execução de testes locais.
+- [ ] **Banco Local:** `docker-compose.yml` na raiz do projeto funcional para subir o MongoDB local de desenvolvimento e testes.
