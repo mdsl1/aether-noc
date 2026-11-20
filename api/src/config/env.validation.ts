@@ -21,10 +21,10 @@ export const envValidationSchema = Joi.object({
   N8N_API_KEY: Joi.string().required(),
 
   SUPABASE_PORTFOLIO_URL: Joi.string().uri().required(),
-  SUPABASE_PORTFOLIO_ANON_KEY: Joi.string().required(),
+  SUPABASE_PORTFOLIO_SERVICE_ROLE_KEY: Joi.string().required(),
 
   SUPABASE_N8N_URL: Joi.string().uri().required(),
-  SUPABASE_N8N_ANON_KEY: Joi.string().required(),
+  SUPABASE_N8N_SERVICE_ROLE_KEY: Joi.string().required(),
 
   TELEGRAM_BOT_TOKEN: Joi.string().required(),
   TELEGRAM_CHAT_ID: Joi.string().required(),

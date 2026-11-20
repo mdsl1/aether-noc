@@ -343,8 +343,15 @@ export class N8nWorkflowChecker implements PullChecker {
       return { status: TotemStatus.HEALTHY, statusReason: null };
     }
 
-    // Workflow ativo sem execução recente (ou em andamento): mantém status atual ou healthy se unknown
-    if (state.status === TotemStatus.UNKNOWN) {
+    // Workflow ativo sem execução recente (ou em andamento):
+    // Se estava unknown ou preso em erro de API/workflow desativado que já foi resolvido, recupera para healthy
+    const wasRecoveredFromInfraOrInactive =
+      state.status === TotemStatus.UNKNOWN ||
+      state.consecutiveFailures > 0 ||
+      state.statusReason === 'API do n8n inacessível' ||
+      state.statusReason === 'Workflow desativado no n8n';
+
+    if (wasRecoveredFromInfraOrInactive) {
       return { status: TotemStatus.HEALTHY, statusReason: null };
     }
 

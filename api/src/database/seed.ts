@@ -1,23 +1,10 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import { IconKey, TotemStatus, TotemType } from '../common/types/domain.types';
+import { isLocalMongoUri } from '../common/utils/mongo-uri.utils';
 import { Island, IslandSchema } from './schemas/island.schema';
 import { TotemState, TotemStateSchema } from './schemas/totem-state.schema';
 import { TotemLog, TotemLogSchema } from './schemas/totem-log.schema';
-
-function isLocalMongoUri(uri: string): boolean {
-  try {
-    const normalized = uri.replace(/^mongodb(\+srv)?:\/\//, 'http://');
-    const parsed = new URL(normalized);
-    return (
-      parsed.hostname === 'localhost' ||
-      parsed.hostname === '127.0.0.1' ||
-      parsed.hostname === '::1'
-    );
-  } catch {
-    return false;
-  }
-}
 
 function buildSeedIslands(): Island[] {
   const n8nBaseUrl = (
@@ -46,7 +33,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 3,
           enabled: true,
           config: {
-            expectedContainers: ['n8n', 'portfolio-api'],
+            expectedContainers: ['n8n'],
             heartbeatTimeoutMinutes: 12,
             ramWarningPercent: 80,
             ramCriticalPercent: 90,
@@ -85,7 +72,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 20,
           enabled: true,
           config: {
-            targetUrl: 'https://portfolio.seudominio.com',
+            targetUrl: 'https://portfolio.exemplo.com',
             expectedStatusMin: 200,
             expectedStatusMax: 299,
             warningLatencyMs: 3000,
@@ -99,7 +86,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 15,
           enabled: true,
           config: {
-            targetUrl: 'https://api.portfolio.seudominio.com/health',
+            targetUrl: 'https://api.portfolio.exemplo.com/health',
             expectedStatusMin: 200,
             expectedStatusMax: 299,
             warningLatencyMs: 3000,
@@ -113,7 +100,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 15,
           enabled: true,
           config: {
-            workflowId: 'portfolio-contact',
+            workflowId: 'wf-portfolio-contact',
             tracksLlmTokens: false,
           },
         },
@@ -126,7 +113,7 @@ function buildSeedIslands(): Island[] {
           enabled: true,
           config: {
             supabaseUrl: supabasePortfolioUrl,
-            supabaseKeyEnvRef: 'SUPABASE_PORTFOLIO_ANON_KEY',
+            supabaseKeyEnvRef: 'SUPABASE_PORTFOLIO_SERVICE_ROLE_KEY',
           },
         },
       ],
@@ -146,7 +133,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 5,
           enabled: true,
           config: {
-            workflowId: 'taco-orchestrator',
+            workflowId: 'wf-taco-orchestrator',
             tracksLlmTokens: true,
           },
         },
@@ -158,7 +145,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 10,
           enabled: true,
           config: {
-            workflowId: 'taco-finance',
+            workflowId: 'wf-taco-finance',
             tracksLlmTokens: true,
           },
         },
@@ -170,7 +157,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 10,
           enabled: true,
           config: {
-            workflowId: 'taco-council',
+            workflowId: 'wf-taco-council',
             tracksLlmTokens: true,
           },
         },
@@ -183,7 +170,7 @@ function buildSeedIslands(): Island[] {
           enabled: true,
           config: {
             supabaseUrl: supabaseN8nUrl,
-            supabaseKeyEnvRef: 'SUPABASE_N8N_ANON_KEY',
+            supabaseKeyEnvRef: 'SUPABASE_N8N_SERVICE_ROLE_KEY',
           },
         },
       ],
@@ -203,7 +190,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 60,
           enabled: true,
           config: {
-            workflowId: 'ops-supabase-keepalive',
+            workflowId: 'wf-ops-supabase-keepalive',
             tracksLlmTokens: false,
           },
         },
@@ -215,7 +202,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 60,
           enabled: true,
           config: {
-            workflowId: 'ops-n8n-backup',
+            workflowId: 'wf-ops-n8n-backup',
             tracksLlmTokens: false,
           },
         },
