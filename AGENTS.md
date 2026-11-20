@@ -40,6 +40,7 @@ Toda decisão técnica deve consultar primeiro a especificação correspondente:
    - Use **Conventional Commits** apenas como sugestão e **não** execute `git commit` ou `git push` sem confirmação explícita do usuário.
 5. **Padrão Visual Pixel Art:** Todo sprite `.webp` (`web/src/assets/sprites/`) e Pixel SVG (`pixelGlyphs.tsx`) deve usar `image-rendering: pixelated` / `shapeRendering="crispEdges"`. As `<ArcaneChain/>` são sempre SVG dinâmicos via código.
 6. **Separação Atlas vs. Local:** A aplicação em execução (npm run start:dev) conecta ao MongoDB Atlas via MONGO_URI. Toda suíte de testes automatizados (Jest/Supertest), testes de stress ou scripts com múltiplos inserts devem conectar exclusivamente ao MongoDB local (docker-compose.yml) via MONGO_TEST_URI, com validação obrigatória garantindo que a URI seja localhost/127.0.0.1 antes de qualquer operação de limpeza ou escrita.
+7. **Documentação de Comandos (`README.md`):** Sempre que um novo comando ou script for adicionado ao projeto (para qualquer finalidade — dev, build, seed, testes, Docker, utilitários), documente-o imediatamente no `README.md` da raiz com a descrição clara do que ele faz.
 
 ---
 
