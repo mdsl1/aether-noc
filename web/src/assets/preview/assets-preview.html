@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>A.E.T.H.E.R. — Visual Assets Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Silkscreen:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
   <style>
     :root {
       --bg-sky-top: #090B1A;
@@ -31,6 +37,11 @@
       letter-spacing: 0.04em;
     }
 
+    h1 {
+      font-family: "Silkscreen", monospace;
+      font-size: 22px;
+    }
+
     .section {
       background: var(--surface-glass);
       border: 1px solid var(--border-arcane);
@@ -49,15 +60,15 @@
       display: flex;
       flex-wrap: wrap;
       align-items: flex-end;
-      gap: 32px;
+      gap: 28px;
     }
 
     .sprite-card {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
-      padding: 16px;
+      gap: 10px;
+      padding: 18px 20px;
       background: rgba(24, 29, 56, 0.55);
       border: 1px solid rgba(139, 92, 246, 0.2);
       border-radius: 8px;
@@ -67,6 +78,47 @@
       font-family: "JetBrains Mono", monospace;
       font-size: 12px;
       color: var(--text-secondary);
+    }
+
+    .populated-island {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 26px;
+    }
+
+    .populated-totems {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: -18px;
+    }
+
+    .island-plaque {
+      margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: 6px;
+      background: var(--surface-glass);
+      border: 1px solid var(--border-arcane);
+      font-family: "Silkscreen", monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #10B981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.75);
     }
 
     .matrix {
@@ -103,13 +155,49 @@
       position: relative;
       width: 64px;
       height: 96px;
+      cursor: pointer;
     }
 
     .totem-wrapper img {
       width: 64px;
       height: 96px;
       display: block;
+      transition: filter 120ms ease-out;
     }
+
+    .totem-wrapper:hover img {
+      filter:
+        drop-shadow(1px 0 0 rgba(255, 255, 255, 0.85))
+        drop-shadow(-1px 0 0 rgba(255, 255, 255, 0.85))
+        drop-shadow(0 1px 0 rgba(255, 255, 255, 0.85))
+        drop-shadow(0 -1px 0 rgba(255, 255, 255, 0.85));
+    }
+
+    .totem-nameplate {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-bottom: 6px;
+      padding: 2px 8px;
+      border-radius: 2px;
+      background: rgba(9, 11, 26, 0.82);
+      font-family: "Silkscreen", monospace;
+      font-size: 10px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 140ms ease;
+    }
+
+    .totem-wrapper:hover .totem-nameplate {
+      opacity: 1;
+    }
+
+    .name-healthy { color: #10B981; }
+    .name-warning { color: #F59E0B; }
+    .name-critical { color: #EF4444; }
+    .name-unknown { color: #CBD5E1; }
 
     .totem-glyph {
       position: absolute;
@@ -117,6 +205,7 @@
       top: 40px;
       width: 16px;
       height: 16px;
+      pointer-events: none;
     }
 
     .state-healthy {
@@ -153,22 +242,26 @@
   </style>
 </head>
 <body>
-  <h1>A.E.T.H.E.R. — Validação Visual de Assets</h1>
+  <h1>A.E.T.H.E.R. — Validação Visual de Assets (2D Terraria)</h1>
 
   <div class="section">
-    <h2>1. Sprites de Ilhas &amp; Base de Totem</h2>
+    <h2>1. Sprites Base (Ilhas por Capacidade &amp; Totem)</h2>
     <div class="islands-grid">
       <div class="sprite-card">
-        <img class="pixel-art" src="../sprites/island-core.webp" width="340" height="260" alt="island-core" />
-        <span class="sprite-label">island-core.webp (340x260)</span>
+        <img class="pixel-art" src="../sprites/island-core.webp" width="296" height="156" alt="island-core" />
+        <span class="sprite-label">island-core.webp (296x156 — até 3 totens)</span>
       </div>
       <div class="sprite-card">
-        <img class="pixel-art" src="../sprites/island-satellite-a.webp" width="240" height="190" alt="island-satellite-a" />
-        <span class="sprite-label">island-satellite-a.webp (240x190)</span>
+        <img class="pixel-art" src="../sprites/island-sm.webp" width="224" height="124" alt="island-sm" />
+        <span class="sprite-label">island-sm.webp (224x124 — 1 a 2 totens)</span>
       </div>
       <div class="sprite-card">
-        <img class="pixel-art" src="../sprites/island-satellite-b.webp" width="240" height="190" alt="island-satellite-b" />
-        <span class="sprite-label">island-satellite-b.webp (240x190)</span>
+        <img class="pixel-art" src="../sprites/island-md.webp" width="356" height="140" alt="island-md" />
+        <span class="sprite-label">island-md.webp (356x140 — 3 a 4 totens)</span>
+      </div>
+      <div class="sprite-card">
+        <img class="pixel-art" src="../sprites/island-lg.webp" width="496" height="156" alt="island-lg" />
+        <span class="sprite-label">island-lg.webp (496x156 — 5 a 6 totens)</span>
       </div>
       <div class="sprite-card">
         <img class="pixel-art" src="../sprites/totem-base.webp" width="64" height="96" alt="totem-base" />
@@ -178,7 +271,12 @@
   </div>
 
   <div class="section">
-    <h2>2. Matriz de Runas (7 PixelGlyphs &times; 4 Estados)</h2>
+    <h2>2. Ilhas Populadas na Capacidade Máxima (passe o mouse nos totens)</h2>
+    <div id="populated-islands" class="islands-grid"></div>
+  </div>
+
+  <div class="section">
+    <h2>3. Matriz de Runas (7 PixelGlyphs &times; 4 Estados)</h2>
     <div id="matrix" class="matrix">
       <div></div>
       <div class="matrix-header">healthy</div>
@@ -199,10 +297,96 @@
       backup: `<path d="M5 2h4v1H5V2zM3 3h2v1H3V3zm6 0h3v1H9V3zM2 4h1v2H2V4zm10 0h1v2h-1V4zM1 6h1v3H1V6zm12 0h2v3h-2V6zM2 9h2v1H2V9zm10 0h2v1h-2V9z"/><path d="M7 7h3v1H7V7zM6 8h2v1H6V8zm4 0h1v4h-1V8zM7 6h1v1H7V6zm0 3h1v1H7V9zM5 9h1v3H5V9zm1 3h4v1H6v-1z"/>`
     };
 
+    function renderTotemHtml(iconKey, state, name) {
+      return `
+        <div class="totem-wrapper">
+          <span class="totem-nameplate name-${state}">${name}</span>
+          <img class="pixel-art" src="../sprites/totem-base.webp" alt="totem-base" />
+          <svg class="totem-glyph state-${state}" viewBox="0 0 16 16" fill="currentColor" shape-rendering="crispEdges">
+            ${GLYPHS[iconKey]}
+          </svg>
+        </div>
+      `;
+    }
+
+    const POPULATED_DEMOS = [
+      {
+        title: 'Core (3/3 totens)',
+        sprite: '../sprites/island-core.webp',
+        width: 296,
+        height: 156,
+        label: 'Core',
+        totems: [
+          { iconKey: 'server', state: 'healthy', name: 'VM Principal' },
+          { iconKey: 'n8n', state: 'healthy', name: 'Motor n8n' },
+          { iconKey: 'backup', state: 'warning', name: 'Backup Core' },
+        ],
+      },
+      {
+        title: 'Small — Máx. 2 totens',
+        sprite: '../sprites/island-sm.webp',
+        width: 224,
+        height: 124,
+        label: 'Ops & Backup',
+        totems: [
+          { iconKey: 'database', state: 'healthy', name: 'Backup DB' },
+          { iconKey: 'backup', state: 'healthy', name: 'Sync Drive' },
+        ],
+      },
+      {
+        title: 'Medium — Máx. 4 totens',
+        sprite: '../sprites/island-md.webp',
+        width: 356,
+        height: 140,
+        label: 'Portfólio',
+        totems: [
+          { iconKey: 'globe', state: 'healthy', name: 'Site Web' },
+          { iconKey: 'api', state: 'warning', name: 'API REST' },
+          { iconKey: 'n8n', state: 'healthy', name: 'Bot Contato' },
+          { iconKey: 'database', state: 'healthy', name: 'Supabase DB' },
+        ],
+      },
+      {
+        title: 'Large — Máx. 6 totens',
+        sprite: '../sprites/island-lg.webp',
+        width: 496,
+        height: 156,
+        label: 'Cluster T.A.C.O.',
+        totems: [
+          { iconKey: 'ai_agent', state: 'healthy', name: 'Orquestrador' },
+          { iconKey: 'ai_agent', state: 'healthy', name: 'Agente Nutri' },
+          { iconKey: 'ai_agent', state: 'critical', name: 'Agente Visão' },
+          { iconKey: 'api', state: 'healthy', name: 'API Gateway' },
+          { iconKey: 'database', state: 'healthy', name: 'Supabase DB' },
+          { iconKey: 'backup', state: 'unknown', name: 'Snapshot' },
+        ],
+      },
+    ];
+
+    const populatedRoot = document.getElementById('populated-islands');
+    for (const demo of POPULATED_DEMOS) {
+      const card = document.createElement('div');
+      card.className = 'sprite-card';
+      card.innerHTML = `
+        <div class="populated-island">
+          <div class="populated-totems">
+            ${demo.totems.map((t) => renderTotemHtml(t.iconKey, t.state, t.name)).join('')}
+          </div>
+          <img class="pixel-art" src="${demo.sprite}" width="${demo.width}" height="${demo.height}" alt="${demo.label}" />
+          <div class="island-plaque">
+            <span class="status-dot"></span>
+            <span>${demo.label}</span>
+          </div>
+        </div>
+        <span class="sprite-label">${demo.title}</span>
+      `;
+      populatedRoot.appendChild(card);
+    }
+
     const STATES = ['healthy', 'warning', 'critical', 'unknown'];
     const matrix = document.getElementById('matrix');
 
-    for (const [key, paths] of Object.entries(GLYPHS)) {
+    for (const [key] of Object.entries(GLYPHS)) {
       const label = document.createElement('div');
       label.className = 'glyph-name';
       label.textContent = key;
@@ -211,14 +395,7 @@
       for (const state of STATES) {
         const cell = document.createElement('div');
         cell.className = 'totem-cell';
-        cell.innerHTML = `
-          <div class="totem-wrapper">
-            <img class="pixel-art" src="../sprites/totem-base.webp" alt="totem-base" />
-            <svg class="totem-glyph state-${state}" viewBox="0 0 16 16" fill="currentColor" shape-rendering="crispEdges">
-              ${paths}
-            </svg>
-          </div>
-        `;
+        cell.innerHTML = renderTotemHtml(key, state, `${key} (${state})`);
         matrix.appendChild(cell);
       }
     }

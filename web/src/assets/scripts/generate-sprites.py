@@ -1,33 +1,47 @@
 """
-Deterministic 32-bit Dark Fantasy Pixel Art Sprite Generator for A.E.T.H.E.R.
-Generates lossless WebP sprites with transparent backgrounds and crisp nearest-neighbor scaling.
+Deterministic 32-bit Dark Fantasy 2D Pixel Art Sprite Generator for A.E.T.H.E.R.
+Generates Terraria-style flat-top floating islands sized by totem capacity
+(sm: 1-2, md: 3-4, lg: 5-6, core: imposing central spire) plus totem-base.webp.
+All sprites use a consistent 2x nearest-neighbor pixel grid and transparent backgrounds.
 """
 
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image
 
-OUT_DIR = Path(__file__).resolve().parent.parent / "src" / "assets" / "sprites"
+OUT_DIR = Path(__file__).resolve().parent.parent / "sprites"
 
 # Palette (Dark Fantasy Obsidian + Moss)
 TRANSPARENT = (0, 0, 0, 0)
-OUTLINE = (7, 8, 16, 255)          # #070810
-ROCK_DEEP = (13, 15, 26, 255)      # #0D0F1A
-ROCK_DARK = (21, 24, 39, 255)      # #151827
-ROCK_MID = (27, 31, 48, 255)       # #1B1F30
-ROCK_LIGHT = (40, 46, 70, 255)     # #282E46
-ROCK_HIGHLIGHT = (58, 66, 98, 255) # #3A4262
+OUTLINE = (7, 8, 16, 255)           # #070810
+ROCK_DEEP = (13, 15, 26, 255)       # #0D0F1A
+ROCK_DARK = (21, 24, 39, 255)       # #151827
+ROCK_MID = (27, 31, 48, 255)        # #1B1F30
+ROCK_LIGHT = (40, 46, 70, 255)      # #282E46
+ROCK_HIGHLIGHT = (58, 66, 98, 255)  # #3A4262
 
-MOSS_DARK = (19, 38, 31, 255)      # #13261F
-MOSS_MID = (30, 58, 47, 255)       # #1E3A2F
-MOSS_LIGHT = (45, 90, 63, 255)     # #2D5A3F
-MOSS_TIP = (64, 122, 84, 255)      # #407A54
+DIRT_DARK = (18, 22, 34, 255)       # #121622
+DIRT_MID = (26, 32, 46, 255)        # #1A202E
 
-TOP_FLOOR_DARK = (16, 19, 32, 255) # #101320
-TOP_FLOOR_MID = (22, 26, 42, 255)  # #161A2A
+MOSS_DARK = (19, 38, 31, 255)       # #13261F
+MOSS_MID = (30, 58, 47, 255)        # #1E3A2F
+MOSS_LIGHT = (45, 90, 63, 255)      # #2D5A3F
+MOSS_TIP = (64, 122, 84, 255)       # #407A54
 
-RUIN_DARK = (23, 27, 42, 255)      # #171B2A
-RUIN_MID = (34, 39, 59, 255)       # #22273B
-RUIN_LIGHT = (47, 54, 80, 255)     # #2F3650
+ARCANE_DIM = (56, 40, 96, 255)      # Subtle violet vein on Core island
+ARCANE_GLOW = (109, 68, 186, 255)   # Subtle arcane core vein highlight
+
+# Decorações orgânicas de borda (cogumelos bioluminescentes e pedras rúnicas)
+MUSH_STEM = (148, 163, 184, 255)    # #94A3B8
+MUSH_CYAN_DARK = (14, 116, 144, 255)
+MUSH_CYAN_GLOW = (56, 189, 248, 255)
+MUSH_VIOLET_DARK = (107, 33, 168, 255)
+MUSH_VIOLET_GLOW = (192, 132, 252, 255)
+RUNE_STONE_LIGHT = (71, 85, 105, 255)
+RUNE_STONE_DARK = (30, 41, 59, 255)
+RUNE_GLINT = (94, 234, 212, 255)    # #5EEAD4
+
+# Fixed ground line in native pixels (upscaled 2x -> 12px from top of sprite)
+GROUND_Y = 6
 
 
 def hash2d(x: int, y: int, seed: int = 0) -> int:
@@ -53,143 +67,218 @@ def add_outline(img: Image.Image) -> Image.Image:
     return out
 
 
-def draw_vine(px, x: int, y_start: int, length: int, seed: int, max_h: int):
+def draw_mushrooms(px, x: int, ground_y: int, variant: str, max_w: int):
+    """Draw a tiny cluster of 2 bioluminescent pixel mushrooms sitting on the grass."""
+    cap_glow = MUSH_CYAN_GLOW if variant == "cyan" else MUSH_VIOLET_GLOW
+    cap_dark = MUSH_CYAN_DARK if variant == "cyan" else MUSH_VIOLET_DARK
+
+    if x < 3 or x + 5 >= max_w - 2 or ground_y < 4:
+        return
+
+    # Taller mushroom
+    px[x + 1, ground_y - 1] = MUSH_STEM
+    px[x + 1, ground_y - 2] = MUSH_STEM
+    px[x, ground_y - 3] = cap_dark
+    px[x + 1, ground_y - 3] = cap_glow
+    px[x + 2, ground_y - 3] = cap_dark
+    px[x + 1, ground_y - 4] = cap_glow
+
+    # Smaller companion mushroom
+    px[x + 4, ground_y - 1] = MUSH_STEM
+    px[x + 3, ground_y - 2] = cap_dark
+    px[x + 4, ground_y - 2] = cap_glow
+
+
+def draw_rune_stone(px, x: int, ground_y: int, max_w: int):
+    """Draw a tiny weathered rune-stone tucked on the outer shoulder of the island."""
+    if x < 3 or x + 4 >= max_w - 2 or ground_y < 5:
+        return
+
+    # 3x4 weathered stone with a 1-2px glowing rune mark
+    for dy in range(1, 5):
+        y = ground_y - dy
+        if dy == 4:
+            px[x + 1, y] = RUNE_STONE_LIGHT
+        else:
+            px[x, y] = RUNE_STONE_LIGHT if dy >= 2 else MOSS_MID
+            px[x + 1, y] = RUNE_STONE_DARK
+            px[x + 2, y] = RUNE_STONE_DARK
+    px[x + 1, ground_y - 2] = RUNE_GLINT
+    px[x + 1, ground_y - 3] = ARCANE_GLOW
+
+
+def draw_vine(px, x: int, y_start: int, length: int, seed: int, max_w: int, max_h: int):
     cur_x = x
     for i in range(length):
         y = y_start + i
-        if y >= max_h:
+        if y >= max_h - 1 or cur_x <= 1 or cur_x >= max_w - 2:
             break
-        if i > 0 and hash2d(x, i, seed) % 5 == 0:
+        if i > 1 and hash2d(x, i, seed) % 5 == 0:
             cur_x += -1 if (hash2d(x, i, seed + 7) % 2 == 0) else 1
+            cur_x = max(2, min(max_w - 3, cur_x))
         color = MOSS_MID if i % 2 == 0 else MOSS_DARK
         if i == length - 1:
             color = MOSS_LIGHT
         px[cur_x, y] = color
         if i < length - 2 and hash2d(cur_x, y, seed + 3) % 3 == 0:
-            px[cur_x + 1, y] = MOSS_LIGHT if i % 4 == 0 else MOSS_DARK
+            side = 1 if i % 2 == 0 else -1
+            if 1 < cur_x + side < max_w - 2:
+                px[cur_x + side, y] = MOSS_LIGHT if i % 4 == 0 else MOSS_DARK
 
 
-def draw_broken_pillar(px, x: int, y_base: int, height: int, width: int = 4):
-    """Draw a subtle weathered stone pillar stump with moss."""
-    for dy in range(height):
-        y = y_base - dy
-        for dx in range(width):
-            # Jagged broken top
-            if dy == height - 1 and dx == width - 1:
-                continue
-            if dx == 0:
-                px[x + dx, y] = RUIN_LIGHT if dy % 2 == 0 else RUIN_MID
-            elif dx == width - 1:
-                px[x + dx, y] = RUIN_DARK
-            else:
-                px[x + dx, y] = RUIN_MID
-        # Moss creeping up the base
-        if dy < 2:
-            px[x, y] = MOSS_MID
-            px[x + width - 1, y] = MOSS_DARK
-
-
-def draw_flagstones(px, x: int, y: int, count: int, seed: int):
-    """Draw subtle cracked ancient flagstones on the top platform."""
-    for i in range(count):
-        fx = x + i * 4
-        if hash2d(fx, y, seed) % 3 == 0:
-            continue
-        px[fx, y] = RUIN_MID
-        px[fx + 1, y] = RUIN_LIGHT if i % 2 == 0 else RUIN_MID
-        px[fx + 2, y] = RUIN_DARK
-        px[fx + 1, y + 1] = RUIN_DARK
-
-
-def generate_island(
+def generate_island_2d(
     w: int,
     h: int,
-    top_y: int,
-    rx: int,
-    ry: int,
+    flat_half_w: int,
     depth: int,
     seed: int,
     taper_bias: float = 0.0,
-    vine_positions: list[tuple[int, int]] | None = None,
+    is_core: bool = False,
 ) -> Image.Image:
+    """
+    Generate a 2D side-view (Terraria-style) dark fantasy floating island.
+    Top flat surface sits cleanly at y = GROUND_Y so totems stand side-by-side.
+    """
     img = Image.new("RGBA", (w, h), TRANSPARENT)
     px = img.load()
     cx = w // 2
+    left_edge = cx - flat_half_w
+    right_edge = cx + flat_half_w
 
-    # 1. Under-rock body (faceted obsidian)
-    for y in range(top_y, min(h - 2, top_y + depth)):
-        t = (y - top_y) / max(1, depth)
-        # Tapered width with faceted crags
-        crag = ((hash2d(y // 3, seed, 11) % 7) - 3) * (1.0 - t * 0.5)
-        half_w = int(rx * (1.0 - t ** 1.35) + crag)
-        if half_w <= 0:
-            continue
-        x_center = cx + int(taper_bias * t * 14)
-        for x in range(max(1, x_center - half_w), min(w - 1, x_center + half_w + 1)):
-            rel_x = (x - x_center) / max(1, half_w)
+    # 1. Under-rock obsidian cliff body (Terraria-style stratified tapered crag)
+    rock_start_y = GROUND_Y + 4
+    max_y = min(h - 2, GROUND_Y + depth)
+    total_rock_h = max(1, max_y - rock_start_y)
+
+    # Multi-peak Terraria bottom profile (1 main central spire + subtle side crags)
+    bottom_profile: dict[int, int] = {}
+    for x in range(left_edge, right_edge + 1):
+        nx = (x - cx) / max(1, flat_half_w)  # -1..1
+        # Main inverted cone + subtle secondary peaks on wider islands
+        base_curve = max(0.0, 1.0 - abs(nx) ** 1.45)
+        side_crag = 0.14 * max(0.0, 1.0 - ((abs(nx) - 0.58) / 0.24) ** 2)
+        if flat_half_w < 60:
+            side_crag *= 0.45
+        # Asymmetric lean via taper_bias
+        bias_factor = 1.0 + taper_bias * nx * 0.18
+        jitter = ((hash2d(x // 3, seed, 19) % 7) - 3) / max(1, total_rock_h)
+        col_t = max(0.06, min(1.0, (base_curve + side_crag) * bias_factor + jitter))
+        bottom_profile[x] = rock_start_y + int(col_t * total_rock_h)
+
+    for x in range(left_edge, right_edge + 1):
+        col_bottom = min(h - 2, bottom_profile[x])
+        col_h = max(1, col_bottom - rock_start_y)
+        rel_x = (x - left_edge) / max(1, right_edge - left_edge)  # 0 left, 1 right
+
+        for y in range(rock_start_y, col_bottom + 1):
+            t_col = (y - rock_start_y) / col_h
+            t_glob = (y - rock_start_y) / total_rock_h
             n = hash2d(x // 2, y // 2, seed)
-            # Lighting from top-left
-            if rel_x < -0.35 and t < 0.7:
-                c = ROCK_LIGHT if n % 3 == 0 else ROCK_MID
-            elif rel_x > 0.35 or t > 0.75:
+            fine = hash2d(x, y, seed + 53)
+            strata = (y // 4 + hash2d(x // 6, 0, seed) % 2) % 3
+
+            # Directional top-left lighting with rocky texture
+            if rel_x < 0.22 and t_glob < 0.65:
+                if fine % 5 == 0 and t_glob < 0.3:
+                    c = ROCK_HIGHLIGHT
+                elif n % 2 == 0:
+                    c = ROCK_LIGHT
+                else:
+                    c = ROCK_MID
+            elif rel_x < 0.42 and t_glob < 0.55:
+                c = ROCK_LIGHT if n % 4 == 0 else (ROCK_MID if n % 3 != 0 else ROCK_DARK)
+            elif rel_x > 0.78 or t_col > 0.78:
                 c = ROCK_DEEP if n % 2 == 0 else ROCK_DARK
             else:
-                c = ROCK_MID if n % 4 == 0 else ROCK_DARK
-            # Vertical facet cracks
-            if abs((x + hash2d(0, y // 4, seed)) % 11) == 0 and t > 0.15:
+                if strata == 0:
+                    c = ROCK_MID if n % 3 != 0 else ROCK_DARK
+                elif strata == 1:
+                    c = ROCK_DARK if n % 4 != 0 else ROCK_MID
+                else:
+                    c = ROCK_DARK if n % 2 == 0 else ROCK_DEEP
+
+            # Sub-soil transition right below the turf
+            if y < rock_start_y + 3 and fine % 3 == 0:
+                c = DIRT_MID if rel_x < 0.5 else DIRT_DARK
+
+            # Vertical obsidian facet cracks
+            crack_x = (x + hash2d(0, y // 5, seed + 17) % 3) % 14
+            if crack_x == 0 and 0.14 < t_col < 0.85 and 0.12 < rel_x < 0.88:
                 c = ROCK_DEEP
+
             px[x, y] = c
 
-    # 2. Flat top platform (ellipse)
-    for y in range(max(1, top_y - ry), min(h - 1, top_y + ry + 1)):
-        for x in range(1, w - 1):
-            dx = (x - cx) / rx
-            dy = (y - top_y) / ry
-            dist = dx * dx + dy * dy
-            if dist <= 1.0:
-                n = hash2d(x, y, seed + 99)
-                if dist > 0.66:
-                    # Richer mossy rim creeping inward
-                    if n % 5 == 0:
-                        px[x, y] = MOSS_TIP
-                    elif n % 2 == 0:
-                        px[x, y] = MOSS_LIGHT
-                    else:
-                        px[x, y] = MOSS_MID
-                elif dist > 0.54:
-                    if n % 4 == 0:
-                        px[x, y] = MOSS_MID
-                    elif n % 2 == 0:
-                        px[x, y] = MOSS_DARK
-                    else:
-                        px[x, y] = ROCK_MID
-                else:
-                    # Flat dark obsidian floor with occasional sprouting moss tufts
-                    if n % 19 == 0:
-                        px[x, y] = MOSS_DARK
-                    elif n % 7 == 0:
-                        px[x, y] = TOP_FLOOR_MID
-                    else:
-                        px[x, y] = TOP_FLOOR_DARK
+    # 2. Subtle embedded arcane crystal accents on the Core island
+    if is_core:
+        crystals = [
+            (cx - 18, rock_start_y + 14, 5),
+            (cx + 14, rock_start_y + 20, 4),
+            (cx - 2, rock_start_y + 32, 6),
+        ]
+        for cr_x, cr_y, cr_h in crystals:
+            for dy in range(cr_h):
+                w_span = 1 if dy in (0, cr_h - 1) else 2
+                for dx in range(-w_span + 1, w_span):
+                    px_x, px_y = cr_x + dx, cr_y + dy
+                    if 2 <= px_x < w - 2 and rock_start_y < px_y < h - 3:
+                        px[px_x, px_y] = ARCANE_GLOW if dx <= 0 and dy < cr_h - 1 else ARCANE_DIM
 
-    # 3. Front rim thickness & moss overhang
-    for x in range(cx - rx, cx + rx + 1):
-        dx = (x - cx) / rx
-        if abs(dx) <= 1.0:
-            rim_y = top_y + int(ry * (1.0 - dx * dx) ** 0.5)
-            if 0 <= rim_y < h - 2:
-                px[x, rim_y] = MOSS_DARK
-                if hash2d(x, rim_y, seed + 5) % 3 == 0:
-                    px[x, rim_y + 1] = MOSS_MID
+    # 3. Flat 2D Grass / Moss Top Layer (y = GROUND_Y .. GROUND_Y + 4)
+    # Slight rounded overhang at both ends (+2px) like Terraria grass blocks
+    turf_left = max(2, left_edge - 2)
+    turf_right = min(w - 3, right_edge + 2)
 
-    # 4. Hanging vines
-    if vine_positions:
-        for vx_off, vlen in vine_positions:
-            vx = cx + vx_off
-            dx = vx_off / rx
-            if abs(dx) < 0.95:
-                vy = top_y + int(ry * (1.0 - dx * dx) ** 0.5)
-                draw_vine(px, vx, vy, vlen, seed + vx_off, h - 2)
+    for x in range(turf_left, turf_right + 1):
+        n = hash2d(x, GROUND_Y, seed + 99)
+        is_corner = x <= turf_left + 1 or x >= turf_right - 1
+
+        # Top surface line (y = GROUND_Y) — crisp and flat!
+        if not is_corner:
+            px[x, GROUND_Y] = MOSS_TIP if n % 3 == 0 else MOSS_LIGHT
+        else:
+            px[x, GROUND_Y + 1] = MOSS_MID
+
+        # Lush turf thickness (3..5px deep with irregular mossy overhang)
+        overhang = 3 + (hash2d(x // 2, 1, seed + 13) % 3)
+        if is_corner:
+            overhang = 2
+
+        for dy in range(1, overhang + 1):
+            y = GROUND_Y + dy
+            if y >= h - 2:
+                break
+            m = hash2d(x, y, seed + 41)
+            if dy == 1:
+                px[x, y] = MOSS_LIGHT if m % 3 != 0 else MOSS_MID
+            elif dy == 2:
+                px[x, y] = MOSS_MID if m % 2 == 0 else MOSS_DARK
+            else:
+                px[x, y] = MOSS_DARK if m % 3 != 0 else MOSS_MID
+
+        # Subtle grass blades sticking 1-2px above GROUND_Y (mostly near edges so center stays clean)
+        dist_from_edge = min(x - turf_left, turf_right - x)
+        if not is_corner and ((dist_from_edge < 10 and n % 4 == 0) or (n % 11 == 0)):
+            px[x, GROUND_Y - 1] = MOSS_TIP if n % 2 == 0 else MOSS_LIGHT
+            if dist_from_edge < 6 and n % 8 == 0:
+                px[x, GROUND_Y - 2] = MOSS_TIP
+
+    # 4. Hanging pixel vines along the underside of the grass lip
+    vine_step = 18 if flat_half_w >= 80 else 15
+    for vx in range(turf_left + 8, turf_right - 8, vine_step):
+        v_hash = hash2d(vx, 7, seed + 211)
+        if v_hash % 3 == 0:
+            continue
+        vlen = 7 + (v_hash % 12)
+        vx_jitter = vx + ((v_hash % 5) - 2)
+        draw_vine(px, vx_jitter, GROUND_Y + 4, vlen, seed + vx, w, h)
+
+    # 5. Subtle edge decorations on outer shoulders (bioluminescent mushrooms & rune stones)
+    # Placed strictly on outer margins so they never overlap centered totems
+    draw_mushrooms(px, turf_left + 3, GROUND_Y, "cyan" if seed % 2 == 0 else "violet", w)
+    if is_core or flat_half_w >= 60:
+        draw_rune_stone(px, turf_right - 7, GROUND_Y, w)
+    else:
+        draw_mushrooms(px, turf_right - 8, GROUND_Y, "violet" if seed % 2 == 0 else "cyan", w)
 
     return add_outline(img)
 
@@ -203,7 +292,6 @@ def generate_totem_base() -> Image.Image:
 
     # Obelisk body
     for y in range(6, 42):
-        # Slight taper toward top
         if y < 10:
             half_w = 3 + (y - 6)
         else:
@@ -228,7 +316,7 @@ def generate_totem_base() -> Image.Image:
             elif y == 31 or x == cx + 4:
                 px[x, y] = ROCK_LIGHT
             else:
-                px[x, y] = (10, 12, 22, 255)  # Smooth dark recessed area
+                px[x, y] = (10, 12, 22, 255)
 
     # Base stones & dark green moss
     for y in range(38, 45):
@@ -247,75 +335,64 @@ def generate_totem_base() -> Image.Image:
     return add_outline(img)
 
 
+def save_2x(img: Image.Image, filename: str) -> None:
+    up = img.resize((img.width * 2, img.height * 2), Image.Resampling.NEAREST)
+    path = OUT_DIR / filename
+    up.save(path, format="WEBP", lossless=True, quality=100)
+    print(f"{filename}: {up.width}x{up.height}px (native {img.width}x{img.height}), mode={up.mode}")
+
+
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # 1. island-core.webp (170x130 -> 340x260)
-    core = generate_island(
-        w=170,
-        h=130,
-        top_y=32,
-        rx=72,
-        ry=22,
-        depth=88,
+    # 1. Core island — imposing central spire (296x156px, flat top ~252px -> fits 1-3 totens)
+    core = generate_island_2d(
+        w=148,
+        h=78,
+        flat_half_w=63,
+        depth=68,
         seed=101,
         taper_bias=0.0,
-        vine_positions=[
-            (-60, 14), (-52, 22), (-40, 18), (-34, 28), (-20, 16),
-            (-12, 20), (6, 15), (22, 26), (36, 18), (48, 22), (60, 14),
-        ],
+        is_core=True,
     )
-    core_px = core.load()
-    draw_broken_pillar(core_px, 34, 24, 9, width=4)
-    draw_broken_pillar(core_px, 130, 26, 7, width=4)
-    draw_flagstones(core_px, 58, 30, 7, seed=101)
-    core_up = core.resize((340, 260), Image.Resampling.NEAREST)
-    core_up.save(OUT_DIR / "island-core.webp", format="WEBP", lossless=True, quality=100)
+    save_2x(core, "island-core.webp")
 
-    # 2. island-satellite-a.webp (120x95 -> 240x190)
-    sat_a = generate_island(
-        w=120,
-        h=95,
-        top_y=24,
-        rx=48,
-        ry=16,
-        depth=62,
+    # 2. Small island (1-2 totens) — 224x124px, flat top ~184px
+    island_sm = generate_island_2d(
+        w=112,
+        h=62,
+        flat_half_w=46,
+        depth=52,
         seed=202,
-        taper_bias=-0.35,
-        vine_positions=[(-38, 14), (-32, 20), (-22, 16), (-18, 24), (-6, 14), (16, 12)],
+        taper_bias=-0.22,
     )
-    sat_a_px = sat_a.load()
-    draw_broken_pillar(sat_a_px, 24, 19, 7, width=3)
-    draw_flagstones(sat_a_px, 46, 22, 5, seed=202)
-    sat_a_up = sat_a.resize((240, 190), Image.Resampling.NEAREST)
-    sat_a_up.save(OUT_DIR / "island-satellite-a.webp", format="WEBP", lossless=True, quality=100)
+    save_2x(island_sm, "island-sm.webp")
 
-    # 3. island-satellite-b.webp (120x95 -> 240x190)
-    sat_b = generate_island(
-        w=120,
-        h=95,
-        top_y=24,
-        rx=46,
-        ry=15,
-        depth=64,
+    # 3. Medium island (3-4 totens) — 356x140px, flat top ~316px
+    island_md = generate_island_2d(
+        w=178,
+        h=70,
+        flat_half_w=79,
+        depth=60,
         seed=309,
-        taper_bias=0.45,
-        vine_positions=[(-24, 12), (4, 16), (10, 20), (24, 26), (35, 18), (40, 13)],
+        taper_bias=0.25,
     )
-    sat_b_px = sat_b.load()
-    draw_broken_pillar(sat_b_px, 88, 19, 6, width=4)
-    draw_flagstones(sat_b_px, 40, 23, 4, seed=309)
-    sat_b_up = sat_b.resize((240, 190), Image.Resampling.NEAREST)
-    sat_b_up.save(OUT_DIR / "island-satellite-b.webp", format="WEBP", lossless=True, quality=100)
+    save_2x(island_md, "island-md.webp")
 
-    # 4. totem-base.webp (32x48 -> 64x96)
+    # 4. Large island (5-6 totens) — 496x156px, flat top ~452px
+    island_lg = generate_island_2d(
+        w=248,
+        h=78,
+        flat_half_w=113,
+        depth=68,
+        seed=417,
+        taper_bias=-0.18,
+    )
+    save_2x(island_lg, "island-lg.webp")
+
+    # 5. Totem base — 64x96px
     totem = generate_totem_base()
-    totem_up = totem.resize((64, 96), Image.Resampling.NEAREST)
-    totem_up.save(OUT_DIR / "totem-base.webp", format="WEBP", lossless=True, quality=100)
-
-    for name in ("island-core.webp", "island-satellite-a.webp", "island-satellite-b.webp", "totem-base.webp"):
-        im = Image.open(OUT_DIR / name)
-        print(f"{name}: {im.size[0]}x{im.size[1]}px, mode={im.mode}")
+    save_2x(totem, "totem-base.webp")
 
 
 if __name__ == "__main__":
