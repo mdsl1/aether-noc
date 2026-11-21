@@ -72,7 +72,7 @@ export const LoginPage: React.FC = () => {
             A.E.T.H.E.R.
           </h1>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            Portal de Observabilidade
+            Automated Environment Telemetry & Health Event Radar
           </p>
         </header>
 
