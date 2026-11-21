@@ -100,7 +100,7 @@ export interface AetherStreamResult {
 }
 
 export function useAetherStream(): AetherStreamResult {
-  const { token, logout } = useAuth();
+  const { token, clearSession } = useAuth();
   const queryClient = useQueryClient();
   const [streamState, setStreamState] =
     useState<SseConnectionState>('reconnecting');
@@ -126,7 +126,7 @@ export function useAetherStream(): AetherStreamResult {
       openWhenHidden: true,
       async onopen(response) {
         if (response.status === 401) {
-          logout();
+          clearSession();
           throw new FatalStreamError('Sessão expirada');
         }
 
@@ -203,7 +203,7 @@ export function useAetherStream(): AetherStreamResult {
       isDisposed = true;
       controller.abort();
     };
-  }, [token, logout, queryClient]);
+  }, [token, clearSession, queryClient]);
 
   return {
     connectionState: token ? streamState : 'disconnected',

@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
@@ -8,6 +9,7 @@ import {
   ALERT_COOLDOWN_MS,
   AlertService,
   formatSaoPauloDateTime,
+  sanitizeTelegramErrorMessage,
 } from './alert.service';
 
 describe('AlertService', () => {
@@ -216,5 +218,42 @@ describe('AlertService', () => {
     expect(state.alertActive).toBe(false);
     expect(state.lastAlertSentAt).toBeNull();
     expect(state.save).not.toHaveBeenCalled();
+  });
+
+  it('mascara o token do bot Telegram ao logar falhas de envio', async () => {
+    expect(
+      sanitizeTelegramErrorMessage(
+        'Request failed for https://api.telegram.org/bot123456:TEST_TOKEN/sendMessage',
+      ),
+    ).toBe(
+      'Request failed for https://api.telegram.org/bot<REDACTED>/sendMessage',
+    );
+
+    const loggerErrorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+
+    httpPostMock.mockReturnValue(
+      throwError(
+        () =>
+          new Error(
+            'connect ETIMEDOUT https://api.telegram.org/bot123456:TEST_TOKEN/sendMessage',
+          ),
+      ),
+    );
+
+    const state = createStateMock({ alertActive: false });
+    findOneExecMock.mockResolvedValue(state);
+
+    await service.handleTotemUpdated(
+      createEvent(TotemStatus.CRITICAL, 'Erro crítico'),
+    );
+
+    expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
+    const loggedMessage = String(loggerErrorSpy.mock.calls[0]?.[0]);
+    expect(loggedMessage).toContain('bot<REDACTED>');
+    expect(loggedMessage).not.toContain('123456:TEST_TOKEN');
+
+    loggerErrorSpy.mockRestore();
   });
 });

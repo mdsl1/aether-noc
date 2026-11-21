@@ -29,6 +29,7 @@ export interface TokenUsage {
 }
 
 export const TOTEM_UPDATED_EVENT = 'totem.updated';
+export const AUTH_LOGOUT_EVENT = 'auth.logout';
 
 export interface TotemUpdatedEvent {
   islandSlug: string;

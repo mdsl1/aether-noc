@@ -34,18 +34,23 @@ async function bootstrap(): Promise<void> {
 
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('A.E.T.H.E.R. API')
-    .setDescription(
-      'API de observabilidade e telemetria do arquipélago A.E.T.H.E.R.',
-    )
-    .setVersion('0.1.0')
-    .addBearerAuth()
-    .addApiKey({ type: 'apiKey', name: 'x-api-key', in: 'header' }, 'x-api-key')
-    .build();
+  if (configService.get<string>('NODE_ENV', 'development') !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('A.E.T.H.E.R. API')
+      .setDescription(
+        'API de observabilidade e telemetria do arquipélago A.E.T.H.E.R.',
+      )
+      .setVersion('0.1.0')
+      .addBearerAuth()
+      .addApiKey(
+        { type: 'apiKey', name: 'x-api-key', in: 'header' },
+        'x-api-key',
+      )
+      .build();
 
-  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, swaggerDocument);
+    const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, swaggerDocument);
+  }
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);

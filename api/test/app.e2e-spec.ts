@@ -18,6 +18,10 @@ import {
   assertLocalMongoUri,
   isLocalMongoUri,
 } from '../src/common/utils/mongo-uri.utils';
+import {
+  AuthState,
+  AuthStateDocument,
+} from '../src/database/schemas/auth-state.schema';
 import { Island, IslandDocument } from '../src/database/schemas/island.schema';
 import {
   TotemLog,
@@ -40,6 +44,7 @@ const TEST_INGEST_API_KEY = E2E_INGEST_API_KEY;
 describe('A.E.T.H.E.R. API (e2e — MongoDB Local)', () => {
   let app: NestExpressApplication;
   let connection: Connection;
+  let authStateModel: Model<AuthStateDocument>;
   let islandModel: Model<IslandDocument>;
   let totemStateModel: Model<TotemStateDocument>;
   let totemLogModel: Model<TotemLogDocument>;
@@ -81,6 +86,9 @@ describe('A.E.T.H.E.R. API (e2e — MongoDB Local)', () => {
       );
     }
 
+    authStateModel = app.get<Model<AuthStateDocument>>(
+      getModelToken(AuthState.name),
+    );
     islandModel = app.get<Model<IslandDocument>>(getModelToken(Island.name));
     totemStateModel = app.get<Model<TotemStateDocument>>(
       getModelToken(TotemState.name),
@@ -91,6 +99,7 @@ describe('A.E.T.H.E.R. API (e2e — MongoDB Local)', () => {
 
     // Limpeza segura e seed mínimo para os testes de integração
     await Promise.all([
+      authStateModel.deleteMany({}),
       islandModel.deleteMany({}),
       totemStateModel.deleteMany({}),
       totemLogModel.deleteMany({}),
@@ -620,6 +629,51 @@ describe('A.E.T.H.E.R. API (e2e — MongoDB Local)', () => {
       expect(receivedChunk.body).toContain('event: totem.updated');
       expect(receivedChunk.body).toContain('"totemId":"core-vm"');
       expect(receivedChunk.body).toContain('"islandSlug":"core"');
+    });
+  });
+
+  describe('POST /api/auth/logout (revogação global de sessões)', () => {
+    it('bloqueia acesso sem JWT com 401', async () => {
+      await request(app.getHttpServer()).post('/api/auth/logout').expect(401);
+    });
+
+    it('revoga tokens anteriores globalmente e permite novo login imediatamente', async () => {
+      const logoutRes = await request(app.getHttpServer())
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      const logoutBody = logoutRes.body as {
+        revoked: boolean;
+        revokedAt: string;
+      };
+      expect(logoutBody.revoked).toBe(true);
+      expect(logoutBody.revokedAt).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
+
+      // Token antigo deve ser rejeitado imediatamente após logout
+      await request(app.getHttpServer())
+        .get('/api/islands')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(401);
+
+      // Novo login emite token com nova versão e volta a acessar rotas protegidas
+      const reloginRes = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .set('X-Forwarded-For', '10.10.0.77')
+        .send({
+          username: TEST_ADMIN_USERNAME,
+          password: TEST_ADMIN_PASSWORD,
+        })
+        .expect(200);
+
+      const freshToken = (reloginRes.body as { accessToken: string })
+        .accessToken;
+      await request(app.getHttpServer())
+        .get('/api/islands')
+        .set('Authorization', `Bearer ${freshToken}`)
+        .expect(200);
     });
   });
 });

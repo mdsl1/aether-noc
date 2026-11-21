@@ -26,3 +26,18 @@ export class LoginResponseDto {
   @ApiProperty({ example: '7d' })
   expiresIn!: string;
 }
+
+export class LogoutResponseDto {
+  @ApiProperty({
+    example: true,
+    description:
+      'Indica se todas as sessões ativas do administrador foram revogadas',
+  })
+  revoked!: boolean;
+
+  @ApiProperty({
+    example: '2026-11-20T04:15:00.000Z',
+    description: 'Timestamp UTC em que a revogação foi registrada',
+  })
+  revokedAt!: string;
+}

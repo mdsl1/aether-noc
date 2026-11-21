@@ -2,20 +2,112 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import { IconKey, TotemStatus, TotemType } from '../common/types/domain.types';
 import { isLocalMongoUri } from '../common/utils/mongo-uri.utils';
+import { AuthState, AuthStateSchema } from './schemas/auth-state.schema';
 import { Island, IslandSchema } from './schemas/island.schema';
 import { TotemState, TotemStateSchema } from './schemas/totem-state.schema';
 import { TotemLog, TotemLogSchema } from './schemas/totem-log.schema';
 
-function buildSeedIslands(): Island[] {
-  const n8nBaseUrl = (
-    process.env.N8N_BASE_URL ?? 'https://n8n.seudominio.com'
+function resolveSeedEnv(
+  name: string,
+  localFallback: string,
+  isLocal: boolean,
+): string {
+  const value = process.env[name]?.trim();
+  if (value) {
+    return value;
+  }
+  if (isLocal) {
+    return localFallback;
+  }
+  throw new Error(
+    `Variável de ambiente obrigatória para o seed não definida: ${name}`,
+  );
+}
+
+function resolveSeedListEnv(
+  name: string,
+  localFallback: string[],
+  isLocal: boolean,
+): string[] {
+  const raw = process.env[name]?.trim();
+  if (raw) {
+    const items = raw
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+    if (items.length > 0) {
+      return items;
+    }
+  }
+  if (isLocal) {
+    return localFallback;
+  }
+  throw new Error(
+    `Variável de ambiente obrigatória para o seed não definida: ${name}`,
+  );
+}
+
+function buildSeedIslands(isLocal: boolean): Island[] {
+  const n8nBaseUrl = resolveSeedEnv(
+    'N8N_BASE_URL',
+    'https://n8n.exemplo.com',
+    isLocal,
   ).replace(/\/+$/, '');
-  const supabasePortfolioUrl = (
-    process.env.SUPABASE_PORTFOLIO_URL ?? 'https://portfolio.supabase.co'
+  const supabasePortfolioUrl = resolveSeedEnv(
+    'SUPABASE_PORTFOLIO_URL',
+    'https://seu-projeto-web.supabase.co',
+    isLocal,
   ).replace(/\/+$/, '');
-  const supabaseN8nUrl = (
-    process.env.SUPABASE_N8N_URL ?? 'https://n8n.supabase.co'
+  const supabaseN8nUrl = resolveSeedEnv(
+    'SUPABASE_N8N_URL',
+    'https://seu-projeto-automacao.supabase.co',
+    isLocal,
   ).replace(/\/+$/, '');
+  const expectedContainers = resolveSeedListEnv(
+    'SEED_VM_EXPECTED_CONTAINERS',
+    ['n8n', 'api-app'],
+    isLocal,
+  );
+  const portfolioWebUrl = resolveSeedEnv(
+    'SEED_PORTFOLIO_WEB_URL',
+    'https://portfolio.exemplo.com',
+    isLocal,
+  );
+  const portfolioApiUrl = resolveSeedEnv(
+    'SEED_PORTFOLIO_API_URL',
+    'https://api.portfolio.exemplo.com/health',
+    isLocal,
+  );
+  const wfPortfolioContact = resolveSeedEnv(
+    'SEED_WF_PORTFOLIO_CONTACT',
+    'wf-portfolio-contact',
+    isLocal,
+  );
+  const wfTacoOrchestrator = resolveSeedEnv(
+    'SEED_WF_TACO_ORCHESTRATOR',
+    'wf-taco-orchestrator',
+    isLocal,
+  );
+  const wfTacoFinance = resolveSeedEnv(
+    'SEED_WF_TACO_FINANCE',
+    'wf-taco-finance',
+    isLocal,
+  );
+  const wfTacoCouncil = resolveSeedEnv(
+    'SEED_WF_TACO_COUNCIL',
+    'wf-taco-council',
+    isLocal,
+  );
+  const wfOpsSupabaseKeepalive = resolveSeedEnv(
+    'SEED_WF_OPS_SUPABASE_KEEPALIVE',
+    'wf-ops-supabase-keepalive',
+    isLocal,
+  );
+  const wfOpsN8nBackup = resolveSeedEnv(
+    'SEED_WF_OPS_N8N_BACKUP',
+    'wf-ops-n8n-backup',
+    isLocal,
+  );
 
   return [
     {
@@ -27,13 +119,13 @@ function buildSeedIslands(): Island[] {
       totems: [
         {
           totemId: 'core-vm',
-          name: 'VM Principal',
+          name: 'Core VM',
           type: TotemType.VM_HEARTBEAT,
           iconKey: IconKey.SERVER,
           checkIntervalMinutes: 3,
           enabled: true,
           config: {
-            expectedContainers: ['n8n', 'api-app'],
+            expectedContainers,
             heartbeatTimeoutMinutes: 12,
             ramWarningPercent: 80,
             ramCriticalPercent: 90,
@@ -43,7 +135,7 @@ function buildSeedIslands(): Island[] {
         },
         {
           totemId: 'core-n8n',
-          name: 'Motor n8n',
+          name: 'Core n8n',
           type: TotemType.HTTP_PING,
           iconKey: IconKey.N8N,
           checkIntervalMinutes: 5,
@@ -59,20 +151,20 @@ function buildSeedIslands(): Island[] {
     },
     {
       slug: 'portfolio',
-      name: 'Portfólio',
+      name: 'Portfolio',
       description: 'Aplicação web, API, contato via n8n e banco Supabase',
       isCore: false,
       order: 1,
       totems: [
         {
           totemId: 'portfolio-web',
-          name: 'Portfólio Web',
+          name: 'Site Web',
           type: TotemType.HTTP_PING,
           iconKey: IconKey.GLOBE,
           checkIntervalMinutes: 20,
           enabled: true,
           config: {
-            targetUrl: 'https://portfolio.exemplo.com',
+            targetUrl: portfolioWebUrl,
             expectedStatusMin: 200,
             expectedStatusMax: 299,
             warningLatencyMs: 3000,
@@ -80,13 +172,13 @@ function buildSeedIslands(): Island[] {
         },
         {
           totemId: 'portfolio-api',
-          name: 'Portfólio API',
+          name: 'API REST',
           type: TotemType.HTTP_PING,
           iconKey: IconKey.API,
           checkIntervalMinutes: 15,
           enabled: true,
           config: {
-            targetUrl: 'https://api.portfolio.exemplo.com/health',
+            targetUrl: portfolioApiUrl,
             expectedStatusMin: 200,
             expectedStatusMax: 299,
             warningLatencyMs: 3000,
@@ -94,19 +186,19 @@ function buildSeedIslands(): Island[] {
         },
         {
           totemId: 'portfolio-n8n-contact',
-          name: 'Contato (n8n)',
+          name: '[n8n] Notif. Contato',
           type: TotemType.N8N_WORKFLOW,
           iconKey: IconKey.N8N,
           checkIntervalMinutes: 15,
           enabled: true,
           config: {
-            workflowId: 'wf-portfolio-contact',
+            workflowId: wfPortfolioContact,
             tracksLlmTokens: false,
           },
         },
         {
           totemId: 'portfolio-db',
-          name: 'Portfólio DB',
+          name: 'Portfolio DB',
           type: TotemType.SUPABASE_HEALTH,
           iconKey: IconKey.DATABASE,
           checkIntervalMinutes: 20,
@@ -133,37 +225,37 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 5,
           enabled: true,
           config: {
-            workflowId: 'wf-taco-orchestrator',
+            workflowId: wfTacoOrchestrator,
             tracksLlmTokens: true,
           },
         },
         {
           totemId: 'taco-finance',
-          name: 'Agente Financeiro',
+          name: 'Gestor Finanças',
           type: TotemType.N8N_WORKFLOW,
           iconKey: IconKey.AI_AGENT,
           checkIntervalMinutes: 10,
           enabled: true,
           config: {
-            workflowId: 'wf-taco-finance',
+            workflowId: wfTacoFinance,
             tracksLlmTokens: true,
           },
         },
         {
           totemId: 'taco-council',
-          name: 'Conselho IA',
+          name: 'O Conselho',
           type: TotemType.N8N_WORKFLOW,
           iconKey: IconKey.AI_AGENT,
           checkIntervalMinutes: 10,
           enabled: true,
           config: {
-            workflowId: 'wf-taco-council',
+            workflowId: wfTacoCouncil,
             tracksLlmTokens: true,
           },
         },
         {
           totemId: 'n8n-db',
-          name: 'n8n / T.A.C.O. DB',
+          name: '[T.A.C.O.] n8n DB',
           type: TotemType.SUPABASE_HEALTH,
           iconKey: IconKey.DATABASE,
           checkIntervalMinutes: 20,
@@ -190,7 +282,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 60,
           enabled: true,
           config: {
-            workflowId: 'wf-ops-supabase-keepalive',
+            workflowId: wfOpsSupabaseKeepalive,
             tracksLlmTokens: false,
           },
         },
@@ -202,7 +294,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 60,
           enabled: true,
           config: {
-            workflowId: 'wf-ops-n8n-backup',
+            workflowId: wfOpsN8nBackup,
             tracksLlmTokens: false,
           },
         },
@@ -235,17 +327,19 @@ async function runSeed(): Promise<void> {
   await mongoose.connect(uri);
 
   try {
+    const AuthStateModel = mongoose.model(AuthState.name, AuthStateSchema);
     const IslandModel = mongoose.model(Island.name, IslandSchema);
     const TotemStateModel = mongoose.model(TotemState.name, TotemStateSchema);
     const TotemLogModel = mongoose.model(TotemLog.name, TotemLogSchema);
 
     await Promise.all([
+      AuthStateModel.syncIndexes(),
       IslandModel.syncIndexes(),
       TotemStateModel.syncIndexes(),
       TotemLogModel.syncIndexes(),
     ]);
 
-    const islands = buildSeedIslands();
+    const islands = buildSeedIslands(isLocal);
     let totalTotems = 0;
 
     for (const island of islands) {

@@ -47,7 +47,7 @@ export class SupabaseHealthChecker implements PullChecker {
         statusCode: null,
         latencyMs: 0,
         isReachable: false,
-        errorMessage: `Variável de ambiente ${supabaseKeyEnvRef} não definida`,
+        errorMessage: 'Credencial do Supabase não configurada no servidor',
         expectedStatusMin: 200,
         expectedStatusMax: 299,
         warningLatencyMs,

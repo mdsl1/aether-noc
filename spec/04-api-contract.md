@@ -3,7 +3,7 @@
 ## 1. Convenções Gerais, Segurança & Validação
 
 - **Prefixo Global:** Todas as rotas de negócio utilizam o prefixo `/api`, com exceção exclusiva do healthcheck público (`GET /health`).
-- **Documentação Viva (Swagger):** Disponível em `GET /api/docs` via `@nestjs/swagger`, refletindo 100% dos DTOs, headers e códigos de resposta abaixo.
+- **Documentação Viva (Swagger):** Disponível em `GET /api/docs` via `@nestjs/swagger` exclusivamente fora de produção (`NODE_ENV !== 'production'`), refletindo 100% dos DTOs, headers e códigos de resposta abaixo.
 - **Validação Global (`ValidationPipe`):** Configurado com `whitelist: true`, `forbidNonWhitelisted: true` e `transform: true`. Qualquer campo extra não declarado no DTO retorna `400 Bad Request`.
 - **Padronização de Datas (RNF-19):** Todos os campos de data/hora trafegam estritamente em **UTC (ISO 8601)** — ex: `"2026-11-20T04:15:00.000Z"`.
 - **Estratégias de Autenticação:**
@@ -92,6 +92,27 @@ JSON
 - `400 Bad Request`: Campos ausentes ou extras não permitidos.
 - `401 Unauthorized`: Usuário ou senha incorretos (mensagem genérica: `"Credenciais inválidas"`).
 - `429 Too Many Requests`: Limite de tentativas excedido.
+
+### `POST /api/auth/logout`
+
+Revoga globalmente todos os tokens JWT ativos do administrador (incrementando `tokenVersion` na coleção `auth_state`) e encerra conexões SSE abertas.
+
+- **Auth:** `Authorization: Bearer <token>`
+- **Rate Limit:** Global (`60/min`)
+- **Request Body:** Nenhum.
+
+**Response `200 OK`:**
+JSON
+```
+{
+  "revoked": true,
+  "revokedAt": "2026-11-20T04:15:00.000Z"
+}
+```
+
+**Erros Esperados:**
+
+- `401 Unauthorized`: Token JWT ausente, inválido ou já revogado.
 
 ## 4. Arquipélago & Totens (Protegido — JWT)
 
@@ -330,8 +351,9 @@ data: {"timestamp":"2026-11-20T04:15:25.000Z"}
 |**Método**|**Rota**|**Autenticação**|**Rate Limit**|**Descrição**|
 |---|---|---|---|---|
 |`GET`|`/health`|Pública|`60/min`|Healthcheck da API + status do MongoDB (Keep-Alive)|
-|`GET`|`/api/docs`|Pública|`60/min`|Documentação Swagger UI gerada automaticamente|
+|`GET`|`/api/docs`|Pública (não-prod)|`60/min`|Documentação Swagger UI gerada automaticamente (`NODE_ENV !== 'production'`)|
 |`POST`|`/api/auth/login`|Pública|`5/min`|Login de administrador único (retorna JWT)|
+|`POST`|`/api/auth/logout`|`Bearer JWT`|`60/min`|Revogação global de todas as sessões JWT ativas|
 |`GET`|`/api/islands`|`Bearer JWT`|`60/min`|Topologia completa das ilhas + estados atuais dos totens|
 |`GET`|`/api/totems/:totemId/logs`|`Bearer JWT`|`60/min`|Histórico paginado do totem + resumo de tokens LLM|
 |`POST`|`/api/totems/:totemId/check`|`Bearer JWT`|`10/min`|Dispara Force Check manual (Pull)|

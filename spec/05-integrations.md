@@ -92,7 +92,7 @@ JSON
         
 - **Supabase (`supabase_health`):**
     
-    - Requisição `GET {SUPABASE_URL}/rest/v1/` com header `apikey` resolvido via `ConfigService.get(config.supabaseKeyEnvRef)` (permitindo monitorar projetos distintos como o do Portfólio e o `banco-taco` do T.A.C.O.)..
+    - Requisição `GET {SUPABASE_URL}/rest/v1/` com header `apikey` resolvido via `ConfigService.get(config.supabaseKeyEnvRef)` (permitindo monitorar projetos distintos como o do Portfólio e o banco do T.A.C.O.)..
     - Além de validar disponibilidade (`200 OK`), o tráfego mantém o projeto ativo no plano gratuito.
 
 ## 4. Telegram Bot API (Alertas Proativos)

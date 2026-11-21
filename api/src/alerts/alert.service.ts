@@ -42,6 +42,10 @@ export function escapeTelegramMarkdown(text: string): string {
   return text.replace(/([_*`[])/g, '\\$1');
 }
 
+export function sanitizeTelegramErrorMessage(message: string): string {
+  return message.replace(/bot\d+:[A-Za-z0-9_-]+/gi, 'bot<REDACTED>');
+}
+
 @Injectable()
 export class AlertService {
   private readonly logger = new Logger(AlertService.name);
@@ -175,7 +179,8 @@ export class AlertService {
       );
       return true;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
+      const rawMessage = error instanceof Error ? error.message : String(error);
+      const message = sanitizeTelegramErrorMessage(rawMessage);
       this.logger.error(
         `Falha ao enviar alerta Telegram para totem '${totemId}': ${message}`,
       );

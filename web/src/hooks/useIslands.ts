@@ -7,7 +7,7 @@ import type { IslandsResponse } from '../types/aether';
 export const ISLANDS_QUERY_KEY = ['islands'] as const;
 
 export function useIslands() {
-  const { token, logout } = useAuth();
+  const { token, clearSession } = useAuth();
 
   const query = useQuery<IslandsResponse, Error>({
     queryKey: ISLANDS_QUERY_KEY,
@@ -30,9 +30,9 @@ export function useIslands() {
 
   useEffect(() => {
     if (query.error instanceof ApiError && query.error.status === 401) {
-      logout();
+      clearSession();
     }
-  }, [query.error, logout]);
+  }, [query.error, clearSession]);
 
   return query;
 }

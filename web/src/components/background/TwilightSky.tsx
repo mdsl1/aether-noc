@@ -133,7 +133,7 @@ export const TwilightSky: React.FC<TwilightSkyProps> = React.memo(
         {/* Estrelas sutis base */}
         <div className="aether-starfield absolute inset-0 opacity-75" />
 
-        {/* Estrelas cintilantes + Lua crescente pixel art (#1) */}
+        {/* Estrelas cintilantes (#1) */}
         <svg
           className="pixel-art absolute inset-0 h-full w-full"
           viewBox="0 0 360 225"
@@ -155,27 +155,29 @@ export const TwilightSky: React.FC<TwilightSkyProps> = React.memo(
               }}
             />
           ))}
+        </svg>
 
-          {/* Lua crescente pixel art no canto superior direito */}
-          <g
-            transform="translate(306, 24)"
-            style={{
-              filter: hasCritical
-                ? 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.55))'
-                : 'drop-shadow(0 0 8px rgba(196, 181, 253, 0.4))',
-            }}
-          >
-            <rect x="5" y="0" width="5" height="2" fill={moonMain} />
-            <rect x="3" y="2" width="4" height="2" fill={moonMain} />
-            <rect x="1" y="4" width="4" height="2" fill={moonMain} />
-            <rect x="0" y="6" width="4" height="4" fill={moonMain} />
-            <rect x="1" y="10" width="4" height="2" fill={moonMain} />
-            <rect x="3" y="12" width="4" height="2" fill={moonMain} />
-            <rect x="5" y="14" width="5" height="2" fill={moonMain} />
-            <rect x="9" y="12" width="2" height="2" fill={moonShade} />
-            <rect x="9" y="2" width="2" height="2" fill={moonShade} />
-            <rect x="3" y="6" width="1" height="4" fill={moonShade} />
-          </g>
+        {/* Lua crescente pixel art ancorada abaixo do TopHud (top-4 + h-14 = 72px) */}
+        <svg
+          className="pixel-art absolute top-24 right-8 h-16 w-11 sm:right-14"
+          viewBox="0 0 11 16"
+          shapeRendering="crispEdges"
+          style={{
+            filter: hasCritical
+              ? 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.55))'
+              : 'drop-shadow(0 0 10px rgba(196, 181, 253, 0.4))',
+          }}
+        >
+          <rect x="5" y="0" width="5" height="2" fill={moonMain} />
+          <rect x="3" y="2" width="4" height="2" fill={moonMain} />
+          <rect x="1" y="4" width="4" height="2" fill={moonMain} />
+          <rect x="0" y="6" width="4" height="4" fill={moonMain} />
+          <rect x="1" y="10" width="4" height="2" fill={moonMain} />
+          <rect x="3" y="12" width="4" height="2" fill={moonMain} />
+          <rect x="5" y="14" width="5" height="2" fill={moonMain} />
+          <rect x="9" y="12" width="2" height="2" fill={moonShade} />
+          <rect x="9" y="2" width="2" height="2" fill={moonShade} />
+          <rect x="3" y="6" width="1" height="4" fill={moonShade} />
         </svg>
 
         {/* Camada 1 de nuvens pixel art (distante e lenta, loop contínuo 200%) */}

@@ -86,6 +86,46 @@ describe('StreamService', () => {
     subscription.unsubscribe();
   });
 
+  it('encerra conexões SSE abertas no logout e permite novas conexões após re-login', () => {
+    let firstCompleted = false;
+    const firstReceived: MessageEvent[] = [];
+
+    service.createStream().subscribe({
+      next: (event) => firstReceived.push(event),
+      complete: () => {
+        firstCompleted = true;
+      },
+    });
+
+    service.handleAuthLogout();
+    expect(firstCompleted).toBe(true);
+
+    const secondReceived: MessageEvent[] = [];
+    const secondSub = service.createStream().subscribe((event) => {
+      secondReceived.push(event);
+    });
+
+    service.handleTotemUpdated({
+      islandSlug: 'core',
+      islandName: 'Core',
+      islandStatus: TotemStatus.HEALTHY,
+      previousStatus: TotemStatus.UNKNOWN,
+      totem: {
+        totemId: 'core-vm',
+        name: 'VM Principal',
+        status: TotemStatus.HEALTHY,
+        statusReason: null,
+        lastCheckAt: '2026-11-20T04:15:01.120Z',
+        lastStatusChangeAt: '2026-11-20T04:15:01.120Z',
+        lastMetrics: null,
+      },
+    });
+
+    expect(firstReceived).toHaveLength(0);
+    expect(secondReceived).toHaveLength(1);
+    secondSub.unsubscribe();
+  });
+
   it('completa o observable ao destruir o módulo', () => {
     let completed = false;
     service.createStream().subscribe({

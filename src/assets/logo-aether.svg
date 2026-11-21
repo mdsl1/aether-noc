@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <!-- Outline -->
+  <path fill="#070810" d="M6 7h20v1H6V7zM4 8h2v1H4V8zm22 0h2v1h-2V8zM3 9h1v4H3V9zm25 0h1v4h-1V9zM4 13h1v3H4v-3zm23 0h1v3h-1v-3zM5 16h1v3H5v-3zm21 0h1v3h-1v-3zM6 19h2v2H6v-2zm18 0h2v2h-2v-2zM8 21h2v3H8v-3zm14 0h2v3h-2v-3zM10 24h2v2h-2v-2zm10 0h2v2h-2v-2zM12 26h2v2h-2v-2zm6 0h2v2h-2v-2zM14 28h4v1h-4v-1z"/>
+
+  <!-- Mossy Top -->
+  <path fill="#2D5A3F" d="M6 8h20v2H6V8zM4 9h2v2H4V9zm22 0h2v2h-2V9z"/>
+  <path fill="#407A54" d="M8 8h5v1H8V8zm9 0h6v1h-6V8zM5 9h3v1H5V9z"/>
+  <path fill="#1E3A2F" d="M5 10h22v2H5v-2z"/>
+  <!-- Hanging Vines -->
+  <path fill="#1E3A2F" d="M6 12h1v4H6v-4zm19 0h1v3h-1v-3z"/>
+  <path fill="#2D5A3F" d="M6 16h1v1H6v-1zm19-1h1v1h-1v-1z"/>
+
+  <!-- Obsidian Rock Body -->
+  <path fill="#1B1F30" d="M4 12h24v1H4v-1zM5 13h22v3H5v-3zM6 16h20v3H6v-3zM8 19h16v2H8v-2zM10 21h12v3H10v-3zM12 24h8v2h-8v-2zM14 26h4v2h-4v-2z"/>
+  <!-- Left Highlight -->
+  <path fill="#282E46" d="M5 13h4v2H5v-2zm1 3h4v2H6v-2zm2 3h3v2H8v-2zm2 2h2v2h-2v-2z"/>
+  <!-- Right Shadow -->
+  <path fill="#0D0F1A" d="M23 13h4v3h-4v-3zm-2 3h5v3h-5v-3zm-2 3h5v2h-5v-2zm-2 2h5v3h-5v-3zm-2 3h5v2h-5v-2zm0 2h3v2h-3v-2z"/>
+
+  <!-- Carved Arcane Runes ("A" Sigil in Healthy Emerald + Side Glyphs) -->
+  <path fill="#10B981" d="M15 13h2v1h-2v-1zm-1 1h1v2h-1v-2zm3 0h1v2h-1v-2zm-4 2h1v4h-1v-4zm5 0h1v4h-1v-4zm-4 1h4v1h-4v-1z"/>
+  <path fill="#A855F7" d="M9 15h1v2H9v-2zm1 2h1v1h-1v-1zm12-2h1v2h-1v-2zm-1 2h1v1h-1v-1zM15 21h2v2h-2v-2z"/>
+</svg>

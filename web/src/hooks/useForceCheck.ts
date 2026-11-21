@@ -5,7 +5,7 @@ import type { ForceCheckResponse } from '../types/aether';
 import { ISLANDS_QUERY_KEY } from './useIslands';
 
 export function useForceCheck() {
-  const { token, logout } = useAuth();
+  const { token, clearSession } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation<ForceCheckResponse, Error, string>({
@@ -21,7 +21,7 @@ export function useForceCheck() {
     },
     onError: (error) => {
       if (error instanceof ApiError && error.status === 401) {
-        logout();
+        clearSession();
       }
     },
   });

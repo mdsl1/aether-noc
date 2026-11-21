@@ -59,6 +59,21 @@ export async function loginRequest(
   return (await response.json()) as LoginResponse;
 }
 
+export async function logoutRequest(token: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    keepalive: true,
+  });
+
+  if (!response.ok && response.status !== 401) {
+    const message = await parseErrorMessage(response);
+    throw new ApiError(response.status, message);
+  }
+}
+
 export async function fetchIslands(
   token: string,
   signal?: AbortSignal,

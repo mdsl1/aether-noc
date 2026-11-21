@@ -12,7 +12,7 @@ export function useTotemLogs(
   page: number,
   limit = 20,
 ) {
-  const { token, logout } = useAuth();
+  const { token, clearSession } = useAuth();
 
   const query = useQuery<TotemLogsResponse, Error>({
     queryKey: totemLogsQueryKey(totemId ?? '', page, limit),
@@ -39,9 +39,9 @@ export function useTotemLogs(
 
   useEffect(() => {
     if (query.error instanceof ApiError && query.error.status === 401) {
-      logout();
+      clearSession();
     }
-  }, [query.error, logout]);
+  }, [query.error, clearSession]);
 
   return query;
 }

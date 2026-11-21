@@ -1,7 +1,11 @@
 import { Injectable, MessageEvent, OnModuleDestroy } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { interval, map, merge, Observable, Subject, takeUntil } from 'rxjs';
-import { TOTEM_UPDATED_EVENT, TotemStatus } from '../common/types/domain.types';
+import {
+  AUTH_LOGOUT_EVENT,
+  TOTEM_UPDATED_EVENT,
+  TotemStatus,
+} from '../common/types/domain.types';
 import type { TotemUpdatedEvent } from '../common/types/domain.types';
 
 export const SSE_PING_INTERVAL_MS = 25_000;
@@ -23,6 +27,7 @@ export interface TotemUpdatedSsePayload {
 export class StreamService implements OnModuleDestroy {
   private readonly updates$ = new Subject<TotemUpdatedSsePayload>();
   private readonly destroy$ = new Subject<void>();
+  private readonly sessionRevoked$ = new Subject<void>();
 
   @OnEvent(TOTEM_UPDATED_EVENT)
   handleTotemUpdated(event: TotemUpdatedEvent): void {
@@ -42,6 +47,11 @@ export class StreamService implements OnModuleDestroy {
     this.updates$.next(payload);
   }
 
+  @OnEvent(AUTH_LOGOUT_EVENT)
+  handleAuthLogout(): void {
+    this.sessionRevoked$.next();
+  }
+
   createStream(
     pingIntervalMs: number = SSE_PING_INTERVAL_MS,
   ): Observable<MessageEvent> {
@@ -59,12 +69,15 @@ export class StreamService implements OnModuleDestroy {
       })),
     );
 
-    return merge(totemEvents$, pingEvents$).pipe(takeUntil(this.destroy$));
+    return merge(totemEvents$, pingEvents$).pipe(
+      takeUntil(merge(this.destroy$, this.sessionRevoked$)),
+    );
   }
 
   onModuleDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    this.sessionRevoked$.complete();
     this.updates$.complete();
   }
 }

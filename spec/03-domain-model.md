@@ -178,6 +178,24 @@ export interface TotemLogDocument {
     - **TTL Index:** `{ timestamp: 1 }` com `{ expireAfterSeconds: 1209600 }` (14 dias — configurável entre 7 e 15 dias).
     - **Índice Único Parcial (Deduplicação n8n):** `{ totemId: 1, "metrics.executionId": 1 }` com `{ unique: true, partialFilterExpression: { "metrics.executionId": { $exists: true } } }` — impede duplicidade de logs de uma mesma execução do n8n mesmo em chamadas simultâneas (_Cron_ + _Force Check_).
 
+### 2.4. Collection `auth_state` (Controle de Revogação de Sessões)
+
+Mantém um único documento de controle (`key: 'admin'`) para suportar invalidação global de tokens JWT no logout (`POST /api/auth/logout`).
+
+TypeScript
+```
+export interface AuthStateDocument {
+  _id: ObjectId;
+  key: string;          // Fixo: "admin"
+  tokenVersion: number; // Incrementado a cada logout global (iniciando em 0)
+  revokedAt: Date | null;
+  updatedAt: Date;
+}
+```
+
+- **Índices em `auth_state`:**
+    - `{ key: 1 }` — `unique: true`
+
 ## 3. Máquina de Estados dos Totens & Regras de Transição
 
 ### 3.1. Ciclo de Vida dos Estados
