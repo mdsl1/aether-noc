@@ -84,7 +84,7 @@ export const ZoomSidebar: React.FC<ZoomSidebarProps> = React.memo(
     return (
       <aside
         aria-label="Controle de zoom"
-        className="fixed top-28 left-4 z-40 flex flex-col items-center gap-2.5 select-none"
+        className="fixed top-24 left-4 z-40 hidden flex-col items-center gap-2.5 select-none sm:flex"
       >
         <span className="text-[13px] font-medium tracking-wide text-[var(--text-primary)] drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
           Zoom

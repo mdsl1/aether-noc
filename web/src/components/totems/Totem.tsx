@@ -2,27 +2,18 @@ import React from 'react';
 import totemBaseSprite from '../../assets/sprites/totem-base.webp';
 import { cn } from '../../lib/cn';
 import type { HydratedTotem, TotemStatus } from '../../types/aether';
+import { formatRelativeTime } from '../../utils/dateFormat';
+import {
+  getTotemQuickSummary,
+  STATUS_PRESENTATION,
+} from '../../utils/totemPresentation';
 import { PixelGlyph } from './pixelGlyphs';
-
-const STATUS_LABEL: Record<TotemStatus, string> = {
-  healthy: 'Saudável',
-  warning: 'Instável',
-  critical: 'Crítico',
-  unknown: 'Desconhecido',
-};
 
 const RUNE_STATE_CLASS: Record<TotemStatus, string> = {
   healthy: 'totem-rune-healthy',
   warning: 'totem-rune-warning',
   critical: 'totem-rune-critical',
   unknown: 'totem-rune-unknown',
-};
-
-const NAMEPLATE_TEXT_CLASS: Record<TotemStatus, string> = {
-  healthy: 'text-emerald-400',
-  warning: 'text-amber-400',
-  critical: 'text-red-400',
-  unknown: 'text-slate-300',
 };
 
 export interface TotemProps {
@@ -35,31 +26,53 @@ export const Totem: React.FC<TotemProps> = React.memo(({ totem, onSelect }) => {
     onSelect?.(totem.totemId);
   };
 
-  const statusLabel = STATUS_LABEL[totem.status];
+  const presentation = STATUS_PRESENTATION[totem.status];
+  const StatusIcon = presentation.Icon;
+  const quickSummary = getTotemQuickSummary(totem);
+  const relativeLastCheck = formatRelativeTime(totem.lastCheckAt);
 
   return (
     <button
       type="button"
       onClick={handleClick}
-      aria-label={`${totem.name} — ${statusLabel}`}
+      aria-label={`${totem.name} — ${presentation.label}`}
       className={cn(
         'group relative flex h-[96px] w-[64px] shrink-0 cursor-pointer items-center justify-center rounded-md',
         'focus:outline-none',
         !totem.enabled && 'opacity-60',
       )}
     >
-      {/* Nickname estilo Minecraft exibido no hover/foco */}
+      {/* Hover Tooltip (Desktop) — Camada z-30 */}
       <span
+        role="tooltip"
         aria-hidden="true"
         className={cn(
-          'pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 whitespace-nowrap',
-          'rounded-[2px] bg-[#090B1A]/80 px-2 py-0.5 font-display text-[10px] leading-tight tracking-wide',
-          'shadow-[0_2px_8px_rgba(0,0,0,0.65)]',
+          'pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-max max-w-[230px] -translate-x-1/2 flex-col gap-1.5 rounded-lg border border-[var(--border-arcane)] bg-[var(--surface-glass)] px-3 py-2 text-left shadow-xl shadow-black/70 backdrop-blur-md md:flex',
           'opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100',
-          NAMEPLATE_TEXT_CLASS[totem.status],
         )}
       >
-        {totem.name}
+        <span className="flex items-center justify-between gap-2.5">
+          <span className="truncate text-xs font-semibold text-[var(--text-primary)]">
+            {totem.name}
+          </span>
+          <span
+            className={cn(
+              'inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium leading-none',
+              presentation.badgeClass,
+            )}
+          >
+            <StatusIcon className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <span>{presentation.label}</span>
+          </span>
+        </span>
+
+        <span className="truncate font-mono text-[11px] text-[var(--text-primary)]/90">
+          {quickSummary}
+        </span>
+
+        <span className="font-mono text-[10px] text-[var(--text-secondary)]">
+          {relativeLastCheck}
+        </span>
       </span>
 
       {/* Anel de aura carmesim para estado crítico */}

@@ -33,7 +33,7 @@ function buildSeedIslands(): Island[] {
           checkIntervalMinutes: 3,
           enabled: true,
           config: {
-            expectedContainers: ['n8n'],
+            expectedContainers: ['n8n', 'api-app'],
             heartbeatTimeoutMinutes: 12,
             ramWarningPercent: 80,
             ramCriticalPercent: 90,

@@ -1,4 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   TransformComponent,
   TransformWrapper,
@@ -21,6 +29,11 @@ import { ZoomSidebar } from './ZoomSidebar';
 const MIN_SCALE = 0.45;
 const MAX_SCALE = 2.0;
 
+export interface ArchipelagoCanvasHandle {
+  recenter: () => void;
+  focusIsland: (islandSlug: string) => void;
+}
+
 export interface ArchipelagoCanvasProps {
   islands: HydratedIsland[];
   hasCritical?: boolean;
@@ -28,12 +41,10 @@ export interface ArchipelagoCanvasProps {
   onSelectTotem?: (totemId: string) => void;
 }
 
-export const ArchipelagoCanvas: React.FC<ArchipelagoCanvasProps> = ({
-  islands,
-  hasCritical = false,
-  islandPulses = {},
-  onSelectTotem,
-}) => {
+export const ArchipelagoCanvas = forwardRef<
+  ArchipelagoCanvasHandle,
+  ArchipelagoCanvasProps
+>(({ islands, hasCritical = false, islandPulses = {}, onSelectTotem }, ref) => {
   const initialScale = useMemo(() => {
     if (typeof window === 'undefined') {
       return 1;
@@ -130,6 +141,45 @@ export const ArchipelagoCanvas: React.FC<ArchipelagoCanvasProps> = ({
       setCurrentScale(state.scale);
     },
     [],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      recenter() {
+        const api = transformRef.current;
+        if (!api) {
+          return;
+        }
+        const targetScale =
+          typeof window !== 'undefined' && window.innerWidth < 768 ? 0.65 : 1;
+        void api.centerView(targetScale, 300, 'easeOut');
+        setCurrentScale(targetScale);
+      },
+      focusIsland(islandSlug: string) {
+        const api = transformRef.current;
+        const pos = positions.get(islandSlug);
+        if (!api || !pos) {
+          return;
+        }
+        const wrapper = api.instance.wrapperComponent;
+        const targetScale =
+          typeof window !== 'undefined' && window.innerWidth < 768 ? 0.85 : 1.05;
+
+        if (!wrapper) {
+          void api.centerView(targetScale, 350, 'easeOut');
+          setCurrentScale(targetScale);
+          return;
+        }
+
+        const rect = wrapper.getBoundingClientRect();
+        const targetX = rect.width / 2 - pos.x * targetScale;
+        const targetY = rect.height / 2 - pos.y * targetScale;
+        void api.setTransform(targetX, targetY, targetScale, 400, 'easeOut');
+        setCurrentScale(targetScale);
+      },
+    }),
+    [positions],
   );
 
   return (
@@ -236,4 +286,6 @@ export const ArchipelagoCanvas: React.FC<ArchipelagoCanvasProps> = ({
       </TransformWrapper>
     </div>
   );
-};
+});
+
+ArchipelagoCanvas.displayName = 'ArchipelagoCanvas';

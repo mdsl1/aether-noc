@@ -53,9 +53,3 @@ Toda decisão técnica deve consultar primeiro a especificação correspondente:
 5. **Fase 5 — Arquipélago `web/`:** Cena orbital com `react-zoom-pan-pinch`, ilhas, `<Totem/>`, `<ArcaneChain/>` e nuvens animadas.
 6. **Fase 6 — Drawer, HUD & Mobile:** HUD flutuante, `<TotemDrawer/>` (VM Heartbeat, Workflow LLM, HTTP Ping), Login (`401`/`429`) e Bottom Sheet mobile.
 7. **Fase 7 — Deploy & DoD:** Deploy (`Render` + `Vercel`), validação ponta a ponta e checklist final do DoD em [spec/01-product-vision.md](spec/01-product-vision.md).
-
----
-
-## 5. Notas Operacionais & Pendências Futuras
-
-- **Container `portfolio-api` no totem `core-vm`:** Removido temporariamente de `expectedContainers` em `api/src/database/seed.ts` (mantendo apenas `['n8n']`), pois a VM ainda não roda o container da API do Portfólio. **Lembrete:** readicionar `'portfolio-api'` em `expectedContainers` (e reexecutar `npm run seed`) quando o container da API for migrado para a VM.

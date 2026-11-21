@@ -73,3 +73,74 @@ export interface TotemUpdatedSsePayload {
     lastMetrics: Record<string, unknown> | null;
   };
 }
+
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+export interface VmContainerMetric {
+  name: string;
+  status: string;
+}
+
+export interface VmHeartbeatMetrics {
+  cpuLoad1m?: number;
+  ramUsedMb?: number;
+  ramTotalMb?: number;
+  ramUsedPercent?: number;
+  diskPercent?: number;
+  containers?: VmContainerMetric[];
+}
+
+export interface HttpPingMetrics {
+  statusCode?: number | null;
+  latencyMs?: number;
+  isReachable?: boolean;
+}
+
+export interface N8nWorkflowMetrics {
+  executionId?: string;
+  workflowActive?: boolean;
+  executionStatus?: 'success' | 'error' | 'crashed' | 'waiting' | string;
+  durationMs?: number;
+  tokenUsage?: TokenUsage | null;
+}
+
+export type TotemLogMetrics = VmHeartbeatMetrics &
+  HttpPingMetrics &
+  N8nWorkflowMetrics;
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasNextPage: boolean;
+}
+
+export interface TotemLogItem {
+  id: string;
+  status: TotemStatus;
+  timestamp: string;
+  summary: string | null;
+  metrics: TotemLogMetrics;
+}
+
+export interface TotemLogsResponse {
+  totemId: string;
+  type: TotemType;
+  pagination: PaginationMeta;
+  tokenSummary: TokenUsage | null;
+  logs: TotemLogItem[];
+}
+
+export interface ForceCheckResponse {
+  totemId: string;
+  islandSlug: string;
+  status: TotemStatus;
+  statusReason: string | null;
+  lastCheckAt: string;
+  lastMetrics: Record<string, unknown> | null;
+}

@@ -1,7 +1,9 @@
 import type {
+  ForceCheckResponse,
   IslandsResponse,
   LoginRequest,
   LoginResponse,
+  TotemLogsResponse,
 } from '../types/aether';
 
 const rawApiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
@@ -75,4 +77,58 @@ export async function fetchIslands(
   }
 
   return (await response.json()) as IslandsResponse;
+}
+
+export async function fetchTotemLogs(
+  token: string,
+  totemId: string,
+  page = 1,
+  limit = 20,
+  signal?: AbortSignal,
+): Promise<TotemLogsResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  const encodedId = encodeURIComponent(totemId);
+  const response = await fetch(
+    `${API_BASE_URL}/api/totems/${encodedId}/logs?${params.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      signal,
+    },
+  );
+
+  if (!response.ok) {
+    const message = await parseErrorMessage(response);
+    throw new ApiError(response.status, message);
+  }
+
+  return (await response.json()) as TotemLogsResponse;
+}
+
+export async function triggerForceCheck(
+  token: string,
+  totemId: string,
+): Promise<ForceCheckResponse> {
+  const encodedId = encodeURIComponent(totemId);
+  const response = await fetch(
+    `${API_BASE_URL}/api/totems/${encodedId}/check`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const message = await parseErrorMessage(response);
+    throw new ApiError(response.status, message);
+  }
+
+  return (await response.json()) as ForceCheckResponse;
 }

@@ -162,6 +162,10 @@ export function useAetherStream(): AetherStreamResult {
             ISLANDS_QUERY_KEY,
             (current) => applyTotemUpdateToCache(current, payload),
           );
+          void queryClient.invalidateQueries({
+            queryKey: ['totem-logs', payload.totem.totemId],
+            refetchType: 'active',
+          });
           setIslandPulses((prev) => ({
             ...prev,
             [payload.islandSlug]: (prev[payload.islandSlug] ?? 0) + 1,
