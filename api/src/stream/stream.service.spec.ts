@@ -63,25 +63,30 @@ describe('StreamService', () => {
     subscription.unsubscribe();
   });
 
-  it('emite evento ping a cada 25 segundos com timestamp ISO UTC', () => {
+  it('emite ping imediato na inscrição e depois a cada 25 segundos com timestamp ISO UTC', () => {
     const received: MessageEvent[] = [];
     const subscription = service.createStream().subscribe((event) => {
       received.push(event);
     });
 
-    jest.advanceTimersByTime(24_999);
-    expect(received).toHaveLength(0);
-
-    jest.advanceTimersByTime(1);
+    // Emissão imediata (0ms) garante flush dos headers HTTP no primeiro byte
+    jest.advanceTimersByTime(0);
     expect(received).toHaveLength(1);
     expect(received[0].type).toBe('ping');
-    const pingData = received[0].data as { timestamp: string };
-    expect(pingData.timestamp).toMatch(
+    const firstPingData = received[0].data as { timestamp: string };
+    expect(firstPingData.timestamp).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
     );
 
-    jest.advanceTimersByTime(25_000);
+    jest.advanceTimersByTime(24_999);
+    expect(received).toHaveLength(1);
+
+    jest.advanceTimersByTime(1);
     expect(received).toHaveLength(2);
+    expect(received[1].type).toBe('ping');
+
+    jest.advanceTimersByTime(25_000);
+    expect(received).toHaveLength(3);
 
     subscription.unsubscribe();
   });

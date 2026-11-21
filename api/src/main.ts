@@ -17,7 +17,13 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: configService.getOrThrow<string>('CORS_ORIGIN'),
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-api-key',
+      'Last-Event-ID',
+      'Cache-Control',
+    ],
   });
 
   app.setGlobalPrefix('api', {

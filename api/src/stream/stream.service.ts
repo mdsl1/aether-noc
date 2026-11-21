@@ -1,6 +1,6 @@
 import { Injectable, MessageEvent, OnModuleDestroy } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { interval, map, merge, Observable, Subject, takeUntil } from 'rxjs';
+import { map, merge, Observable, Subject, takeUntil, timer } from 'rxjs';
 import {
   AUTH_LOGOUT_EVENT,
   TOTEM_UPDATED_EVENT,
@@ -62,7 +62,7 @@ export class StreamService implements OnModuleDestroy {
       })),
     );
 
-    const pingEvents$: Observable<MessageEvent> = interval(pingIntervalMs).pipe(
+    const pingEvents$: Observable<MessageEvent> = timer(0, pingIntervalMs).pipe(
       map(() => ({
         type: 'ping',
         data: { timestamp: new Date().toISOString() },

@@ -94,6 +94,10 @@ export function applyTotemUpdateToCache(
   };
 }
 
+const STREAM_STALE_TIMEOUT_MS = 65_000;
+const BASE_RECONNECT_DELAY_MS = 2_000;
+const MAX_RECONNECT_DELAY_MS = 15_000;
+
 export interface AetherStreamResult {
   connectionState: SseConnectionState;
   islandPulses: Record<string, number>;
@@ -113,95 +117,221 @@ export function useAetherStream(): AetherStreamResult {
       return;
     }
 
-    const controller = new AbortController();
     let isDisposed = false;
+    let activeController: AbortController | null = null;
+    let staleTimerId: number | null = null;
+    let retryTimerId: number | null = null;
+    let retryAttempt = 0;
 
-    void fetchEventSource(`${API_BASE_URL}/api/stream`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'text/event-stream',
-      },
-      signal: controller.signal,
-      openWhenHidden: true,
-      async onopen(response) {
-        if (response.status === 401) {
-          clearSession();
-          throw new FatalStreamError('Sessão expirada');
-        }
+    const clearStaleTimer = () => {
+      if (staleTimerId !== null) {
+        window.clearTimeout(staleTimerId);
+        staleTimerId = null;
+      }
+    };
 
-        if (!response.ok) {
-          throw new Error(`Falha ao abrir stream SSE (HTTP ${response.status})`);
-        }
+    const clearRetryTimer = () => {
+      if (retryTimerId !== null) {
+        window.clearTimeout(retryTimerId);
+        retryTimerId = null;
+      }
+    };
 
-        const contentType = response.headers.get('content-type') ?? '';
-        if (!contentType.includes('text/event-stream')) {
-          throw new Error(`Content-Type inesperado no SSE: ${contentType}`);
-        }
+    const invalidateSyncedData = () => {
+      void queryClient.invalidateQueries({ queryKey: ISLANDS_QUERY_KEY });
+      void queryClient.invalidateQueries({
+        queryKey: ['totem-logs'],
+        refetchType: 'active',
+      });
+    };
 
-        if (isDisposed) {
+    const scheduleReconnect = (delayMs = 0) => {
+      if (isDisposed) {
+        return;
+      }
+      clearRetryTimer();
+      clearStaleTimer();
+      activeController?.abort();
+
+      if (delayMs <= 0) {
+        connect();
+        return;
+      }
+
+      retryTimerId = window.setTimeout(() => {
+        retryTimerId = null;
+        connect();
+      }, delayMs);
+    };
+
+    const armStaleTimer = () => {
+      clearStaleTimer();
+      if (isDisposed || document.hidden) {
+        return;
+      }
+      staleTimerId = window.setTimeout(() => {
+        if (isDisposed || document.hidden) {
           return;
         }
+        setStreamState('reconnecting');
+        scheduleReconnect(0);
+      }, STREAM_STALE_TIMEOUT_MS);
+    };
 
-        setStreamState('connected');
+    const connect = () => {
+      if (isDisposed) {
+        return;
+      }
 
-        if (hasConnectedOnceRef.current) {
-          void queryClient.invalidateQueries({ queryKey: ISLANDS_QUERY_KEY });
-        } else {
-          hasConnectedOnceRef.current = true;
-        }
-      },
-      onmessage(event) {
-        if (isDisposed || event.event !== 'totem.updated' || !event.data) {
-          return;
-        }
+      clearRetryTimer();
+      clearStaleTimer();
+      activeController?.abort();
 
-        try {
-          const payload = JSON.parse(event.data) as TotemUpdatedSsePayload;
-          queryClient.setQueryData<IslandsResponse>(
-            ISLANDS_QUERY_KEY,
-            (current) => applyTotemUpdateToCache(current, payload),
-          );
-          void queryClient.invalidateQueries({
-            queryKey: ['totem-logs', payload.totem.totemId],
-            refetchType: 'active',
-          });
-          setIslandPulses((prev) => ({
-            ...prev,
-            [payload.islandSlug]: (prev[payload.islandSlug] ?? 0) + 1,
-          }));
-        } catch {
-          // Ignore malformed SSE frame without breaking the stream
-        }
-      },
-      onclose() {
-        if (!isDisposed) {
+      const controller = new AbortController();
+      activeController = controller;
+      const isCurrentAttempt = () =>
+        !isDisposed && activeController === controller;
+
+      void fetchEventSource(`${API_BASE_URL}/api/stream`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'text/event-stream',
+        },
+        signal: controller.signal,
+        openWhenHidden: false,
+        async onopen(response) {
+          if (!isCurrentAttempt()) {
+            return;
+          }
+
+          if (response.status === 401) {
+            clearStaleTimer();
+            clearSession();
+            throw new FatalStreamError('Sessão expirada');
+          }
+
+          if (!response.ok) {
+            throw new Error(
+              `Falha ao abrir stream SSE (HTTP ${response.status})`,
+            );
+          }
+
+          const contentType = response.headers.get('content-type') ?? '';
+          if (!contentType.includes('text/event-stream')) {
+            throw new Error(`Content-Type inesperado no SSE: ${contentType}`);
+          }
+
+          retryAttempt = 0;
+          setStreamState('connected');
+          armStaleTimer();
+
+          if (hasConnectedOnceRef.current) {
+            invalidateSyncedData();
+          } else {
+            hasConnectedOnceRef.current = true;
+          }
+        },
+        onmessage(event) {
+          if (!isCurrentAttempt()) {
+            return;
+          }
+
+          armStaleTimer();
+
+          if (event.event !== 'totem.updated' || !event.data) {
+            return;
+          }
+
+          try {
+            const payload = JSON.parse(event.data) as TotemUpdatedSsePayload;
+            queryClient.setQueryData<IslandsResponse>(
+              ISLANDS_QUERY_KEY,
+              (current) => applyTotemUpdateToCache(current, payload),
+            );
+            void queryClient.invalidateQueries({
+              queryKey: ['totem-logs', payload.totem.totemId],
+              refetchType: 'active',
+            });
+            setIslandPulses((prev) => ({
+              ...prev,
+              [payload.islandSlug]: (prev[payload.islandSlug] ?? 0) + 1,
+            }));
+          } catch {
+            // Ignore malformed SSE frame without breaking the stream
+          }
+        },
+        onclose() {
+          if (!isCurrentAttempt()) {
+            return;
+          }
+          clearStaleTimer();
           setStreamState('reconnecting');
           throw new Error('Conexão SSE encerrada pelo servidor');
-        }
-      },
-      onerror(error) {
-        if (isDisposed) {
-          return;
-        }
+        },
+        onerror(error) {
+          if (!isCurrentAttempt()) {
+            throw error instanceof Error
+              ? error
+              : new Error('Conexão SSE substituída');
+          }
 
-        if (error instanceof FatalStreamError) {
+          clearStaleTimer();
+
+          if (error instanceof FatalStreamError) {
+            setStreamState('disconnected');
+            throw error;
+          }
+
+          setStreamState('reconnecting');
+          const delayMs = Math.min(
+            MAX_RECONNECT_DELAY_MS,
+            BASE_RECONNECT_DELAY_MS * 2 ** retryAttempt,
+          );
+          retryAttempt += 1;
+          return delayMs;
+        },
+      }).catch(() => {
+        if (isCurrentAttempt() && !controller.signal.aborted) {
           setStreamState('disconnected');
-          throw error;
         }
+      });
+    };
 
-        setStreamState('reconnecting');
-        return 3_000;
-      },
-    }).catch(() => {
-      if (!isDisposed) {
-        setStreamState('disconnected');
+    const handleVisibilityChange = () => {
+      if (isDisposed) {
+        return;
       }
-    });
+
+      if (document.hidden) {
+        clearStaleTimer();
+        clearRetryTimer();
+      } else {
+        setStreamState('reconnecting');
+      }
+    };
+
+    const handleOnline = () => {
+      if (isDisposed || document.hidden) {
+        return;
+      }
+      retryAttempt = 0;
+      setStreamState('reconnecting');
+      invalidateSyncedData();
+      scheduleReconnect(0);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+    connect();
 
     return () => {
       isDisposed = true;
-      controller.abort();
+      clearStaleTimer();
+      clearRetryTimer();
+      activeController?.abort();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
     };
   }, [token, clearSession, queryClient]);
 

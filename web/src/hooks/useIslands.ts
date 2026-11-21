@@ -18,8 +18,9 @@ export function useIslands() {
       return fetchIslands(token, signal);
     },
     enabled: Boolean(token),
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
+    staleTime: 10_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     retry: (failureCount, error) => {
       if (error instanceof ApiError && error.status === 401) {
         return false;
